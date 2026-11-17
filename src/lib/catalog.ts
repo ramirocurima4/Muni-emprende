@@ -36,7 +36,6 @@ export interface PublicProductCardItem {
   title: string;
   slug: string;
   description: string;
-  priceArs: string | null;
   expiresAt: string | null;
   expirationBadge: ExpirationBadgeType;
   category: {
@@ -220,7 +219,6 @@ async function fetchCachedCatalogProducts(
     title: p.title,
     slug: p.slug,
     description: p.description,
-    priceArs: p.priceArs ? p.priceArs.toString() : null,
     expiresAt: p.expiresAt ? p.expiresAt.toISOString() : null,
     expirationBadge: computeExpirationBadge(p.expiresAt, now),
     category: {
@@ -293,7 +291,6 @@ export async function getPublicProductBySlug(slug: string) {
     title: product.title,
     slug: product.slug,
     description: product.description,
-    priceArs: product.priceArs ? product.priceArs.toString() : null,
     expiresAt: product.expiresAt ? product.expiresAt.toISOString() : null,
     expirationBadge: computeExpirationBadge(product.expiresAt, now),
     category: product.category,
@@ -306,6 +303,7 @@ export interface FeaturedHomeProductItem {
   id: string;
   title: string;
   slug: string;
+  description: string;
   expirationBadge: ExpirationBadgeType;
   category: {
     id: string;
@@ -315,9 +313,11 @@ export interface FeaturedHomeProductItem {
   entrepreneur: {
     id: string;
     businessName: string;
+    ownerName: string;
     slug: string;
     whatsappNumber: string;
     neighborhood: string | null;
+    bio: string | null;
   };
   primaryImage: {
     id: string;
@@ -325,6 +325,71 @@ export interface FeaturedHomeProductItem {
     width: number;
     height: number;
   } | null;
+}
+
+const HOME_PRODUCT_INCLUDE = {
+  category: {
+    select: { id: true, name: true, slug: true },
+  },
+  entrepreneur: {
+    select: {
+      id: true,
+      businessName: true,
+      ownerName: true,
+      slug: true,
+      whatsappNumber: true,
+      neighborhood: true,
+      bio: true,
+    },
+  },
+  images: {
+    orderBy: [{ isPrimary: "desc" as const }, { sortOrder: "asc" as const }],
+    take: 1,
+    select: {
+      id: true,
+      relativePath: true,
+      width: true,
+      height: true,
+    },
+  },
+};
+
+function mapHomeShowcaseProduct(
+  p: {
+    id: string;
+    title: string;
+    slug: string;
+    description: string;
+    expiresAt: Date | null;
+    category: { id: string; name: string; slug: string };
+    entrepreneur: {
+      id: string;
+      businessName: string;
+      ownerName: string;
+      slug: string;
+      whatsappNumber: string;
+      neighborhood: string | null;
+      bio: string | null;
+    };
+    images: Array<{
+      id: string;
+      relativePath: string;
+      width: number;
+      height: number;
+    }>;
+  },
+  referenceNow: Date,
+): FeaturedHomeProductItem {
+  return {
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    description: p.description,
+    expirationBadge: computeExpirationBadge(p.expiresAt, referenceNow),
+    category: p.category,
+    entrepreneur: p.entrepreneur,
+    primaryImage: p.images[0] ?? null,
+  };
 }
 
 export async function getFeaturedHomeProducts(
@@ -345,51 +410,58 @@ export async function getFeaturedHomeProducts(
       },
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
     },
-    include: {
-      category: {
-        select: { id: true, name: true, slug: true },
-      },
-      entrepreneur: {
-        select: {
-          id: true,
-          businessName: true,
-          slug: true,
-          whatsappNumber: true,
-          neighborhood: true,
-        },
-      },
-      images: {
-        orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
-        take: 1,
-        select: {
-          id: true,
-          relativePath: true,
-          width: true,
-          height: true,
-        },
-      },
-    },
+    include: HOME_PRODUCT_INCLUDE,
     orderBy: [{ approvedAt: "desc" }, { createdAt: "desc" }],
     take: safeLimit,
   });
 
-  return products.map((p) => ({
-    id: p.id,
-    title: p.title,
-    slug: p.slug,
-    expirationBadge: computeExpirationBadge(p.expiresAt, now),
-    category: {
-      id: p.category.id,
-      name: p.category.name,
-      slug: p.category.slug,
-    },
+  return products.map((p) => mapHomeShowcaseProduct(p, now));
+}
+
+export async function getHomeShowcaseData(): Promise<{
+  gastronomyProducts: FeaturedHomeProductItem[];
+  catalogProducts: FeaturedHomeProductItem[];
+}> {
+  "use cache";
+  cacheTag("public-catalog", "public-products");
+  cacheLife("minutes");
+
+  const now = new Date();
+  const baseWhere = {
+    status: ProductStatus.APPROVED,
     entrepreneur: {
-      id: p.entrepreneur.id,
-      businessName: p.entrepreneur.businessName,
-      slug: p.entrepreneur.slug,
-      whatsappNumber: p.entrepreneur.whatsappNumber,
-      neighborhood: p.entrepreneur.neighborhood,
+      status: EntrepreneurStatus.APPROVED,
     },
-    primaryImage: p.images[0] ?? null,
-  }));
+    OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+  };
+
+  const [gastronomyRaw, nonGastronomyRaw] = await Promise.all([
+    db.product.findMany({
+      where: {
+        ...baseWhere,
+        category: { slug: "gastronomia", isActive: true },
+      },
+      include: HOME_PRODUCT_INCLUDE,
+      orderBy: [{ expiresAt: "asc" }, { approvedAt: "desc" }, { createdAt: "desc" }],
+      take: 6,
+    }),
+    db.product.findMany({
+      where: {
+        ...baseWhere,
+        category: { slug: { not: "gastronomia" }, isActive: true },
+      },
+      include: HOME_PRODUCT_INCLUDE,
+      orderBy: [{ approvedAt: "desc" }, { createdAt: "desc" }],
+      take: 12,
+    }),
+  ]);
+
+  const gastronomyProducts = gastronomyRaw.map((p) =>
+    mapHomeShowcaseProduct(p, now),
+  );
+  const catalogProducts = nonGastronomyRaw.map((p) =>
+    mapHomeShowcaseProduct(p, now),
+  );
+
+  return { gastronomyProducts, catalogProducts };
 }

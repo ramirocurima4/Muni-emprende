@@ -12,7 +12,7 @@ import {
   removeUploadedProductImageVariants,
   type SavedProductImageVariants,
 } from "@/lib/server/image-upload";
-import { getSession } from "@/lib/session";
+import { getSession, isEntrepreneurRole } from "@/lib/session";
 import { slugifyText } from "@/lib/slug";
 import { createProductSchema } from "@/lib/validations/product";
 
@@ -70,7 +70,7 @@ export async function createProductAction(
   formData: FormData,
 ): Promise<CreateProductActionState> {
   const session = await getSession();
-  if (!session || session.role !== "ENTREPRENEUR") {
+  if (!session || !isEntrepreneurRole(session.role)) {
     return {
       ok: false,
       error: "Tu sesión expiró o no tenés permisos para cargar productos.",

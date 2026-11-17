@@ -16,9 +16,11 @@ datasource db {
 // ============================================================================
 
 enum UserRole {
-  ENTREPRENEUR
-  MODERATOR
   ADMIN
+  MODERATOR
+  USER_TRUSTED
+  USER_NEW
+  ENTREPRENEUR
 
   @@map("user_role")
 }
@@ -57,9 +59,10 @@ enum AuditEntityType {
 
 model User {
   id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar(255)
+  username     String   @unique @db.VarChar(60)
+  email        String?  @unique @db.VarChar(255)
   passwordHash String   @map("password_hash") @db.VarChar(255)
-  role         UserRole @default(ENTREPRENEUR)
+  role         UserRole @default(USER_NEW)
   isActive     Boolean  @default(true) @map("is_active")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -84,6 +87,7 @@ model Entrepreneur {
   neighborhood    String?            @db.VarChar(120)
   bio             String?            @db.Text
   avatarPath      String?            @map("avatar_path") @db.VarChar(255)
+  isTrusted       Boolean            @default(false) @map("is_trusted")
   status          EntrepreneurStatus @default(PENDING)
   rejectionReason String?            @map("rejection_reason") @db.Text
   approvedAt      DateTime?          @map("approved_at")
@@ -97,6 +101,7 @@ model Entrepreneur {
   products Product[]
 
   @@index([status])
+  @@index([status, isTrusted])
   @@index([approvedById])
   @@index([businessName(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("entrepreneurs")
@@ -119,21 +124,20 @@ model Category {
 }
 
 model Product {
-  id                String        @id @default(uuid()) @db.Uuid
-  entrepreneurId    String        @map("entrepreneur_id") @db.Uuid
-  categoryId        String        @map("category_id") @db.Uuid
-  title             String        @db.VarChar(160)
-  slug              String        @unique @db.VarChar(200)
-  description       String        @db.Text
-  priceArs          Decimal?      @map("price_ars") @db.Decimal(12, 2)
-  status            ProductStatus @default(PENDING)
-  rejectionReason   String?       @map("rejection_reason") @db.Text
-  lastPriceUpdateAt DateTime?     @map("last_price_update_at")
-  expiresAt         DateTime?     @map("expires_at")
-  approvedAt        DateTime?     @map("approved_at")
-  approvedById      String?       @map("approved_by") @db.Uuid
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
+  id              String        @id @default(uuid()) @db.Uuid
+  entrepreneurId  String        @map("entrepreneur_id") @db.Uuid
+  categoryId      String        @map("category_id") @db.Uuid
+  title           String        @db.VarChar(160)
+  slug            String        @unique @db.VarChar(200)
+  description     String        @db.Text
+  ingredients     String?       @db.Text
+  status          ProductStatus @default(PENDING)
+  rejectionReason String?       @map("rejection_reason") @db.Text
+  expiresAt       DateTime?     @map("expires_at")
+  approvedAt      DateTime?     @map("approved_at")
+  approvedById    String?       @map("approved_by") @db.Uuid
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   // Relaciones
   entrepreneur Entrepreneur   @relation(fields: [entrepreneurId], references: [id], onDelete: Cascade)

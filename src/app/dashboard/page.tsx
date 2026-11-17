@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { ProductAvailabilitySwitch } from "@/components/dashboard/ProductAvailabilitySwitch";
 import { db } from "@/lib/db";
 import { getProductImageUrl } from "@/lib/images";
-import { getSession } from "@/lib/session";
+import { getSession, isEntrepreneurRole } from "@/lib/session";
 
 export const metadata: Metadata = {
   title: "Mis Productos · Panel del Emprendedor",
@@ -35,7 +35,7 @@ function DashboardSkeleton() {
 
 async function DashboardContent() {
   const session = await getSession();
-  if (!session || session.role !== "ENTREPRENEUR") {
+  if (!session || !isEntrepreneurRole(session.role)) {
     redirect("/login");
   }
 

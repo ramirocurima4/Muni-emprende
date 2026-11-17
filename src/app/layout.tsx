@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 import { Suspense } from "react";
+import { Footer } from "@/components/layout/Footer";
 import { HeaderAuthNav } from "@/components/layout/HeaderAuthNav";
 import "./globals.css";
 
@@ -16,7 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#0E4B27",
+  themeColor: "#3D7A1E",
   width: "device-width",
   initialScale: 1,
 };
@@ -61,27 +62,33 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es-AR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#F6F3EC] text-[#1C2420]">
-        <header className="sticky top-0 z-30 border-b border-[#E8E2D5]/70 bg-white/95 shadow-sm shadow-black/[0.03] backdrop-blur-md">
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-2.5 sm:px-8 sm:py-3">
+      <body className="min-h-full flex flex-col bg-brand-cream text-brand-ink">
+        <header className="sticky top-0 z-30 border-b border-brand-border/75 bg-brand-cream/95 backdrop-blur-md">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5 px-3.5 py-2.5 sm:gap-4 sm:px-8 sm:py-3">
             <Link
               href="/"
-              className="group flex items-center gap-3.5 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E4B27]"
+              className="group flex min-w-0 items-center gap-2.5 rounded-xl py-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green sm:gap-3.5"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src="/logo.jpeg"
+                src="/logo-san-roque.png"
                 alt="San Roque Municipio"
-                width={382}
-                height={575}
-                className="h-14 w-auto shrink-0 object-contain sm:h-16"
+                width={370}
+                height={583}
+                className="municipal-shield-green h-14 w-auto shrink-0 object-contain sm:h-16"
               />
-              <div className="h-8 w-px bg-[#E8E2D5]" aria-hidden="true" />
-              <div className="leading-tight">
-                <span className="block text-[11px] font-bold uppercase tracking-[0.14em] text-[#9E8229]">
-                  Feria Digital Oficial
+              <div
+                className="hidden h-8 w-px bg-brand-sky/40 sm:block"
+                aria-hidden="true"
+              />
+              <div className="min-w-0 leading-tight">
+                <span className="block truncate text-[10px] font-bold uppercase tracking-[0.12em] text-brand-sky-dark sm:hidden">
+                  San Roque
                 </span>
-                <span className="block text-base font-extrabold tracking-tight text-[#0E4B27] transition-colors group-hover:text-[#0A381D] sm:text-lg">
+                <span className="hidden truncate text-[11px] font-bold uppercase tracking-[0.14em] text-brand-sky-dark sm:block">
+                  Dir. de Empleo y Emprendedores
+                </span>
+                <span className="block truncate text-sm font-extrabold tracking-tight text-brand-green-dark transition-colors group-hover:text-brand-green sm:text-lg">
                   MuniEmprende
                 </span>
               </div>
@@ -89,7 +96,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
             <Suspense
               fallback={
-                <div className="h-9 w-28 animate-pulse rounded-xl bg-[#E8E2D5]/70" />
+                <div className="h-9 w-28 animate-pulse rounded-xl bg-brand-sky/25" />
               }
             >
               <HeaderAuthNav />
@@ -99,29 +106,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
         <main className="flex-1">{children}</main>
 
-        <footer className="mt-8 border-t border-[#E8E2D5] bg-[#FDFBF7]">
-          <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-bold text-[#1C2420]">
-                  MuniEmprende — Municipalidad de San Roque
-                </p>
-                <p className="mt-0.5 text-xs text-[#525E57]">
-                  Área de Modernización y Empleo · Catálogo Oficial de
-                  Emprendedores Locales
-                </p>
-              </div>
-              <div className="rounded-2xl border border-[#E8E2D5] bg-[#F6F3EC] px-4 py-3 text-xs leading-relaxed text-[#525E57] sm:max-w-md">
-                <strong className="font-semibold text-[#1C2420]">
-                  Aviso oficial:
-                </strong>{" "}
-                La Municipalidad de San Roque brinda únicamente este espacio de
-                difusión publicitaria y no interviene en precios, medios de
-                pago, entregas ni garantías comerciales.
-              </div>
-            </div>
-          </div>
-        </footer>
+        <Footer />
       </body>
     </html>
   );

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">MuniEmprende</string>
+    <string name="title_activity_main">MuniEmprende</string>
+    <string name="package_name">com.sanroque.muniemprende</string>
+    <string name="custom_url_scheme">com.sanroque.muniemprende</string>
+</resources>

@@ -3,7 +3,7 @@
 import { AuditEntityType, ProductStatus } from "@prisma/client";
 import { revalidatePath, updateTag } from "next/cache";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { getSession, isEntrepreneurRole } from "@/lib/session";
 import {
   type ToggleProductAvailabilityInput,
   toggleProductAvailabilitySchema,
@@ -24,7 +24,7 @@ export async function toggleProductAvailabilityAction(
   input: ToggleProductAvailabilityInput,
 ): Promise<ToggleProductAvailabilityResult> {
   const session = await getSession();
-  if (!session || session.role !== "ENTREPRENEUR") {
+  if (!session || !isEntrepreneurRole(session.role)) {
     return {
       ok: false,
       error: "Tu sesión expiró o no tenés permisos de emprendedor.",

@@ -6,14 +6,22 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 días
 
 export const sessionPayloadSchema = z.object({
   userId: z.string().uuid(),
-  email: z.string().email(),
-  role: z.enum(["ENTREPRENEUR", "MODERATOR", "ADMIN"]),
+  username: z.string().min(1),
+  email: z.string().email().nullable().optional(),
+  role: z.enum(["USER_NEW", "USER_TRUSTED", "ENTREPRENEUR", "MODERATOR", "ADMIN"]),
   entrepreneurId: z.string().uuid().nullable().optional(),
   iat: z.number(),
   exp: z.number(),
 });
 
 export type SessionPayload = z.infer<typeof sessionPayloadSchema>;
+
+/**
+ * Indica si el rol pertenece a una cuenta emprendedora (nueva, de confianza o legado).
+ */
+export function isEntrepreneurRole(role: SessionPayload["role"]): boolean {
+  return role === "USER_NEW" || role === "USER_TRUSTED" || role === "ENTREPRENEUR";
+}
 
 function getJwtSecretBytes(): Uint8Array {
   const secret = process.env.JWT_SECRET;

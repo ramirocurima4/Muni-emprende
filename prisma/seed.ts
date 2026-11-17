@@ -81,20 +81,22 @@ async function main() {
 
   // 1. Usuario ADMIN Municipal
   const adminUser = await db.user.upsert({
-    where: { email: "modernizacion@munisanroque.ar" },
+    where: { username: "modernizacion" },
     update: {
+      email: "modernizacion@munisanroque.ar",
       passwordHash: adminPasswordHash,
       role: UserRole.ADMIN,
       isActive: true,
     },
     create: {
+      username: "modernizacion",
       email: "modernizacion@munisanroque.ar",
       passwordHash: adminPasswordHash,
       role: UserRole.ADMIN,
       isActive: true,
     },
   });
-  console.log(`✔ Usuario ADMIN listo: ${adminUser.email}`);
+  console.log(`✔ Usuario ADMIN listo: ${adminUser.username}`);
 
   // 2. Categorías Oficiales
   const categoryMap = new Map<string, string>();
@@ -119,16 +121,18 @@ async function main() {
 
   // 3. Usuario + Emprendedor de Prueba (APPROVED)
   const demoUser = await db.user.upsert({
-    where: { email: "feria.donroque@munisanroque.ar" },
+    where: { username: "feria.donroque" },
     update: {
+      email: "feria.donroque@munisanroque.ar",
       passwordHash: entrepreneurPasswordHash,
-      role: UserRole.ENTREPRENEUR,
+      role: UserRole.USER_TRUSTED,
       isActive: true,
     },
     create: {
+      username: "feria.donroque",
       email: "feria.donroque@munisanroque.ar",
       passwordHash: entrepreneurPasswordHash,
-      role: UserRole.ENTREPRENEUR,
+      role: UserRole.USER_TRUSTED,
       isActive: true,
     },
   });
@@ -171,7 +175,7 @@ async function main() {
       categorySlug: "gastronomia",
       description:
         "Dulce de mamón elaborado a leña con fruta seleccionada de quintas locales de San Roque. Sin conservantes artificiales.",
-      priceArs: "4800.00",
+      ingredients: "Mamón fresco de quinta, azúcar, clavo de olor y agua.",
       expiresAt: new Date(now.getTime() + 10 * 60 * 60 * 1000), // Vence hoy (+10h)
       image: {
         relativePath: "products/2026/11/seed-dulce-mamon",
@@ -185,7 +189,7 @@ async function main() {
       categorySlug: "artesanias-y-decoracion",
       description:
         "Canasto matero reforzado tejido a mano en fibra natural de palma caranday con divisiones internas para termo y equipo completo.",
-      priceArs: "19500.00",
+      ingredients: null,
       expiresAt: null,
       image: {
         relativePath: "products/2026/11/seed-canasto-caranday",
@@ -199,7 +203,7 @@ async function main() {
       categorySlug: "textil-e-indumentaria",
       description:
         "Prenda artesanal tejida en telar criollo con algodón puro en tonos tierra y verde salvia. Ideal para media estación.",
-      priceArs: "34000.00",
+      ingredients: null,
       expiresAt: null,
       image: {
         relativePath: "products/2026/11/seed-ruana-telar",
@@ -213,7 +217,7 @@ async function main() {
       categorySlug: "vivero-y-jardineria",
       description:
         "Incluye plantines orgánicos de romero, albahaca, menta peperina y orégano listos para trasplantar, con sustrato abonado.",
-      priceArs: "7200.00",
+      ingredients: null,
       expiresAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), // Oferta temporal (+3 días)
       image: {
         relativePath: "products/2026/11/seed-kit-aromaticas",
@@ -227,7 +231,7 @@ async function main() {
       categorySlug: "artesanias-y-decoracion",
       description:
         "Tabla maciza de algarrobo estacionado (50x30 cm), curada con cera de abejas natural. Incluye grabado personalizado a pedido.",
-      priceArs: "26000.00",
+      ingredients: null,
       expiresAt: null,
       image: {
         relativePath: "products/2026/11/seed-tabla-algarrobo",
@@ -248,26 +252,24 @@ async function main() {
       update: {
         title: item.title,
         description: item.description,
-        priceArs: item.priceArs,
+        ingredients: item.ingredients,
         categoryId,
         entrepreneurId: demoEntrepreneur.id,
         status: ProductStatus.APPROVED,
         approvedAt: now,
         approvedById: adminUser.id,
-        lastPriceUpdateAt: now,
         expiresAt: item.expiresAt,
       },
       create: {
         title: item.title,
         slug: item.slug,
         description: item.description,
-        priceArs: item.priceArs,
+        ingredients: item.ingredients,
         categoryId,
         entrepreneurId: demoEntrepreneur.id,
         status: ProductStatus.APPROVED,
         approvedAt: now,
         approvedById: adminUser.id,
-        lastPriceUpdateAt: now,
         expiresAt: item.expiresAt,
       },
     });

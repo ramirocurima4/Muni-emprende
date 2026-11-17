@@ -1,36 +1,34 @@
 @import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 :root {
-  --bg-cream: #f6f3ec;
-  --surface-card: #fdfbf7;
-  --border-subtle: #e8e2d5;
-  --sage-primary: #0e4b27;
-  --sage-primary-hover: #0a381d;
-  --sage-pastel: #e6f0ea;
-  --sage-dark-text: #0e4b27;
-  --ochre-accent: #9e8229;
-  --ochre-soft: #f7efe0;
-  --ochre-text: #5c430e;
-  --clay-accent: #b5892e;
-  --text-charcoal: #1c2420;
-  --text-slate: #525e57;
+  --bg-cream: #fdfbf7;
+  --surface-card: #ffffff;
+  --border-subtle: #e6e4dc;
+  --brand-green: #3d7a1e;
+  --brand-green-vibrant: #559125;
+  --brand-green-hover: #2e6115;
+  --brand-green-dark: #244f10;
+  --brand-green-soft: #e7f3dc;
+  --brand-green-sage: #c4d9a2;
+  --brand-amber: #f5a623;
+  --brand-amber-hover: #e09112;
+  --brand-amber-gold: #f7b500;
+  --brand-amber-soft: #fef3dc;
+  --brand-amber-text: #8a4f00;
+  --brand-sky: #7498d0;
+  --brand-sky-light: #dce9f9;
+  --brand-sky-tint: #edf4fc;
+  --brand-sky-dark: #1f4478;
+  --text-ink: #18261c;
+  --text-muted: #4e5d52;
 }
 
 @theme inline {
   --color-background: var(--bg-cream);
-  --color-foreground: var(--text-charcoal);
+  --color-foreground: var(--text-ink);
   --color-surface: var(--surface-card);
   --color-border-subtle: var(--border-subtle);
-  --color-sage: var(--sage-primary);
-  --color-sage-hover: var(--sage-primary-hover);
-  --color-sage-pastel: var(--sage-pastel);
-  --color-sage-dark: var(--sage-dark-text);
-  --color-ochre: var(--ochre-accent);
-  --color-ochre-soft: var(--ochre-soft);
-  --color-ochre-text: var(--ochre-text);
-  --color-clay: var(--clay-accent);
-  --color-charcoal: var(--text-charcoal);
-  --color-slate-muted: var(--text-slate);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -41,7 +39,7 @@ html {
 
 body {
   background-color: var(--bg-cream);
-  color: var(--text-charcoal);
+  color: var(--text-ink);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }
 
@@ -61,4 +59,11 @@ body {
 
 .carousel-snap-start {
   scroll-snap-align: start;
+}
+
+/* Filtro monocromático en verde institucional (#3D7A1E) con mix-blend-mode: multiply */
+.municipal-shield-green {
+  mix-blend-mode: multiply;
+  filter: brightness(0) saturate(100%) invert(34%) sepia(90%) saturate(350%)
+    hue-rotate(56deg);
 }

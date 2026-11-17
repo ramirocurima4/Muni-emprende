@@ -56,7 +56,7 @@ export async function registerEntrepreneurAction(
   const rawValues = {
     ownerName: String(formData.get("ownerName") ?? ""),
     businessName: String(formData.get("businessName") ?? ""),
-    email: String(formData.get("email") ?? ""),
+    username: String(formData.get("username") ?? ""),
     whatsappNumber: String(formData.get("whatsappNumber") ?? ""),
     neighborhood: String(formData.get("neighborhood") ?? ""),
     bio: String(formData.get("bio") ?? ""),
@@ -67,7 +67,7 @@ export async function registerEntrepreneurAction(
   const safeEchoValues = {
     ownerName: rawValues.ownerName,
     businessName: rawValues.businessName,
-    email: rawValues.email,
+    username: rawValues.username,
     whatsappNumber: rawValues.whatsappNumber,
     neighborhood: rawValues.neighborhood,
     bio: rawValues.bio,
@@ -86,15 +86,15 @@ export async function registerEntrepreneurAction(
   const data = parsed.data;
 
   const existingUser = await db.user.findUnique({
-    where: { email: data.email },
+    where: { username: data.username },
     select: { id: true },
   });
 
   if (existingUser) {
     return {
-      error: "Ya existe una cuenta registrada con ese correo electrónico.",
+      error: "Ya existe una cuenta registrada con ese nombre de usuario.",
       fieldErrors: {
-        email: ["Este correo ya está registrado. Probá iniciando sesión."],
+        username: ["Este nombre de usuario ya está en uso. Elegí otro."],
       },
       values: safeEchoValues,
     };
@@ -111,9 +111,10 @@ export async function registerEntrepreneurAction(
     const result = await db.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          email: data.email,
+          username: data.username,
+          email: null,
           passwordHash,
-          role: UserRole.ENTREPRENEUR,
+          role: UserRole.USER_NEW,
           isActive: true,
         },
       });
@@ -159,8 +160,9 @@ export async function registerEntrepreneurAction(
 
   await createSessionCookie({
     userId: createdUserId,
-    email: data.email,
-    role: "ENTREPRENEUR",
+    username: data.username,
+    email: null,
+    role: UserRole.USER_NEW,
     entrepreneurId: createdEntrepreneurId,
   });
 
@@ -171,27 +173,27 @@ export async function loginAction(
   _prevState: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
-  const rawEmail = String(formData.get("email") ?? "");
+  const rawUsername = String(formData.get("username") ?? "");
   const rawPassword = String(formData.get("password") ?? "");
 
   const parsed = loginSchema.safeParse({
-    email: rawEmail,
+    username: rawUsername,
     password: rawPassword,
   });
 
   if (!parsed.success) {
     const flattened = parsed.error.flatten();
     return {
-      error: "Revisá tu correo y contraseña.",
+      error: "Revisá tu nombre de usuario y contraseña.",
       fieldErrors: flattened.fieldErrors,
-      values: { email: rawEmail },
+      values: { username: rawUsername },
     };
   }
 
-  const { email, password } = parsed.data;
+  const { username, password } = parsed.data;
 
   const user = await db.user.findUnique({
-    where: { email },
+    where: { username },
     include: {
       entrepreneur: {
         select: {
@@ -204,16 +206,16 @@ export async function loginAction(
 
   if (!user || !user.isActive) {
     return {
-      error: "Correo electrónico o contraseña incorrectos.",
-      values: { email },
+      error: "Nombre de usuario o contraseña incorrectos.",
+      values: { username },
     };
   }
 
   const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
   if (!isPasswordValid) {
     return {
-      error: "Correo electrónico o contraseña incorrectos.",
-      values: { email },
+      error: "Nombre de usuario o contraseña incorrectos.",
+      values: { username },
     };
   }
 
@@ -221,12 +223,13 @@ export async function loginAction(
     return {
       error:
         "Tu cuenta de emprendedor se encuentra temporalmente suspendida. Comunicate con el área de Modernización y Empleo.",
-      values: { email },
+      values: { username },
     };
   }
 
   await createSessionCookie({
     userId: user.id,
+    username: user.username,
     email: user.email,
     role: user.role,
     entrepreneurId: user.entrepreneur?.id ?? null,

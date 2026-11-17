@@ -24,11 +24,11 @@ export function FeaturedProductsCarousel({
 
   if (products.length === 0) {
     return (
-      <div className="rounded-[32px] bg-white px-8 py-14 text-center shadow-2xl shadow-black/5">
-        <p className="text-base font-bold text-[#1C2420]">
+      <div className="rounded-[32px] bg-brand-surface px-8 py-14 text-center shadow-2xl shadow-black/5">
+        <p className="text-base font-bold text-brand-ink">
           Pronto verás los productos destacados de la feria
         </p>
-        <p className="mt-1.5 text-xs text-[#525E57] sm:text-sm">
+        <p className="mt-1.5 text-xs text-brand-muted sm:text-sm">
           Los emprendedores de San Roque están sumando sus elaboraciones al
           catálogo oficial.
         </p>
@@ -44,19 +44,19 @@ export function FeaturedProductsCarousel({
       {/* Encabezado de la sección con controles limpios en desktop */}
       <div className="flex items-end justify-between gap-4">
         <div>
-          <span className="inline-block text-xs font-bold uppercase tracking-[0.16em] text-[#9E8229]">
-            Vidriera Boutique Municipal
+          <span className="inline-block text-xs font-bold uppercase tracking-[0.16em] text-brand-amber-text">
+            Vidriera Digital Municipal
           </span>
           <h2
             id="featured-heading"
-            className="mt-1.5 text-2xl font-extrabold tracking-tight text-[#1C2420] sm:text-3xl"
+            className="mt-1.5 text-2xl font-extrabold tracking-tight text-brand-ink sm:text-3xl"
           >
             Productos Destacados
           </h2>
         </div>
 
         <div className="flex items-center gap-3">
-          <span className="text-xs font-medium text-[#525E57] sm:hidden">
+          <span className="text-xs font-medium text-brand-muted sm:hidden">
             Deslizá →
           </span>
 
@@ -65,7 +65,7 @@ export function FeaturedProductsCarousel({
               type="button"
               onClick={() => handleScroll("prev")}
               aria-label="Anterior producto destacado"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-sm font-bold text-[#1C2420] shadow-xl shadow-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:text-[#0E4B27] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E4B27]"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-surface text-sm font-bold text-brand-ink shadow-xl shadow-black/5 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-sky-light hover:text-brand-sky-dark focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green"
             >
               ←
             </button>
@@ -73,7 +73,7 @@ export function FeaturedProductsCarousel({
               type="button"
               onClick={() => handleScroll("next")}
               aria-label="Siguiente producto destacado"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0E4B27] text-sm font-bold text-white shadow-xl shadow-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#0A381D] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E4B27]"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-brand-green text-sm font-bold text-white shadow-xl shadow-brand-green/20 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-green-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green"
             >
               →
             </button>
@@ -103,12 +103,12 @@ export function FeaturedProductsCarousel({
           return (
             <article
               key={product.id}
-              className="carousel-snap-start group flex h-[430px] w-[82%] min-w-[276px] max-w-[320px] shrink-0 flex-col rounded-[28px] bg-white shadow-2xl shadow-black/5 transition-all duration-300 ease-out sm:h-[450px] sm:w-[320px] sm:max-w-none sm:hover:-translate-y-1.5 sm:hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.10)]"
+              className="carousel-snap-start group flex h-[430px] w-[82%] min-w-[276px] max-w-[320px] shrink-0 flex-col rounded-[28px] bg-brand-surface shadow-2xl shadow-black/5 transition-all duration-300 ease-out sm:h-[450px] sm:w-[320px] sm:max-w-none sm:hover:-translate-y-1.5 sm:hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.10)]"
             >
               {/* La Foto (El Foco): ocupa el ~65% superior de la tarjeta con bordes superiores redondeados */}
               <Link
                 href={`/productos/${product.slug}`}
-                className="relative block h-[64%] w-full shrink-0 overflow-hidden rounded-t-[28px] bg-[#EAE4D7] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0E4B27]"
+                className="relative block h-[64%] w-full shrink-0 overflow-hidden rounded-t-[28px] bg-[#EAE4D7] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-green"
               >
                 {imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -122,18 +122,18 @@ export function FeaturedProductsCarousel({
                     className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                   />
                 ) : (
-                  <div className="flex h-full w-full items-center justify-center p-4 text-center text-xs font-medium text-[#525E57]">
+                  <div className="flex h-full w-full items-center justify-center p-4 text-center text-xs font-medium text-brand-muted">
                     Sin imagen disponible
                   </div>
                 )}
 
                 {product.expirationBadge === "TODAY" ? (
-                  <span className="absolute top-3.5 right-3.5 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-[11px] font-bold text-[#7A3E0A] shadow-md shadow-black/5 backdrop-blur-xs">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#C86D14]" />
+                  <span className="absolute top-3.5 right-3.5 inline-flex items-center gap-1.5 rounded-full bg-brand-amber px-3 py-1 text-[11px] font-bold text-brand-ink shadow-md shadow-black/5">
+                    <span className="h-1.5 w-1.5 rounded-full bg-brand-ink" />
                     Vence hoy
                   </span>
                 ) : product.expirationBadge === "TEMPORARY" ? (
-                  <span className="absolute top-3.5 right-3.5 inline-flex items-center rounded-full bg-white/95 px-3 py-1 text-[11px] font-semibold text-[#0E4B27] shadow-md shadow-black/5 backdrop-blur-xs">
+                  <span className="absolute top-3.5 right-3.5 inline-flex items-center rounded-full bg-brand-sky-light/95 px-3 py-1 text-[11px] font-semibold text-brand-sky-dark shadow-md shadow-black/5 backdrop-blur-xs">
                     Edición temporal
                   </span>
                 ) : null}
@@ -143,12 +143,12 @@ export function FeaturedProductsCarousel({
               <div className="flex flex-1 flex-col justify-between p-5 sm:p-6">
                 <div>
                   {/* Subtítulo/etiqueta destacada de autoría: nombre del taller/emprendedor */}
-                  <div className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-[#1C2420]">
+                  <div className="flex items-center gap-1.5 text-xs font-bold tracking-wide text-brand-ink">
                     <svg
                       aria-hidden="true"
                       viewBox="0 0 20 20"
                       fill="currentColor"
-                      className="h-3.5 w-3.5 shrink-0 text-[#0E4B27]"
+                      className="h-3.5 w-3.5 shrink-0 text-brand-green"
                     >
                       <path
                         fillRule="evenodd"
@@ -162,10 +162,10 @@ export function FeaturedProductsCarousel({
                   </div>
 
                   {/* Título del producto (Cero precios) */}
-                  <h3 className="mt-1.5 line-clamp-1 text-base font-extrabold leading-snug text-[#1C2420] sm:text-lg">
+                  <h3 className="mt-1.5 line-clamp-1 text-base font-extrabold leading-snug text-brand-ink sm:text-lg">
                     <Link
                       href={`/productos/${product.slug}`}
-                      className="transition-colors hover:text-[#0E4B27] focus:outline-none focus-visible:underline"
+                      className="transition-colors hover:text-brand-green focus:outline-none focus-visible:underline"
                     >
                       {product.title}
                     </Link>
@@ -178,7 +178,7 @@ export function FeaturedProductsCarousel({
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Contactar a ${product.entrepreneur.businessName} por ${product.title}`}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-[#F6F3EC] px-4 py-2.5 text-xs font-bold text-[#0E4B27] transition-all duration-200 hover:bg-[#0E4B27] hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E4B27] focus-visible:ring-offset-2 sm:text-sm"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-green-soft px-4 py-2.5 text-xs font-bold text-brand-green-dark transition-all duration-200 hover:bg-brand-green hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 sm:text-sm"
                 >
                   <span>Contacto</span>
                   <span aria-hidden="true">→</span>

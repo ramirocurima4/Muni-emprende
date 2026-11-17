@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getPublicProductBySlug } from "@/lib/catalog";
 import { getProductImageUrl } from "@/lib/images";
-import { buildProductWhatsappUrl, formatPriceArs } from "@/lib/whatsapp";
+import { buildProductWhatsappUrl } from "@/lib/whatsapp";
 
 interface ProductDetailPageProps {
   params: Promise<{ slug: string }>;
@@ -22,17 +22,16 @@ export async function generateMetadata({
     };
   }
 
-  const formattedPrice = formatPriceArs(product.priceArs);
   const primaryImage = product.images[0];
   const ogImageUrl = primaryImage
     ? getProductImageUrl(primaryImage.relativePath, "full")
     : undefined;
 
   return {
-    title: `${product.title} (${formattedPrice})`,
+    title: product.title,
     description: `${product.description} · Emprendimiento: ${product.entrepreneur.businessName}`,
     openGraph: {
-      title: `${product.title} — ${formattedPrice}`,
+      title: product.title,
       description: product.description,
       images: ogImageUrl
         ? [
@@ -77,7 +76,6 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
     ? getProductImageUrl(primaryImage.relativePath, "full")
     : null;
 
-  const formattedPrice = formatPriceArs(product.priceArs);
   const whatsappUrl = buildProductWhatsappUrl({
     whatsappNumber: product.entrepreneur.whatsappNumber,
     businessName: product.entrepreneur.businessName,
@@ -89,19 +87,19 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
       <nav aria-label="Breadcrumb" className="mb-5 flex flex-wrap items-center gap-2">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 rounded-full bg-[#FDFBF7] px-3.5 py-1.5 text-xs font-semibold text-[#0E4B27] shadow-2xs transition-colors hover:bg-[#E6F0EA]"
+          className="inline-flex items-center gap-1 rounded-full bg-brand-surface px-3.5 py-1.5 text-xs font-semibold text-brand-green shadow-2xs transition-colors hover:bg-brand-green-soft"
         >
           ← Inicio
         </Link>
         <Link
           href="/catalogo"
-          className="inline-flex items-center gap-1 rounded-full border border-[#ECE6DA] bg-[#FDFBF7] px-3.5 py-1.5 text-xs font-semibold text-[#1C2420] transition-colors hover:bg-[#E6F0EA] hover:text-[#0E4B27]"
+          className="inline-flex items-center gap-1 rounded-full border border-brand-border bg-brand-surface px-3.5 py-1.5 text-xs font-semibold text-brand-ink transition-colors hover:bg-brand-sky-light hover:text-brand-sky-dark"
         >
           Ver catálogo completo
         </Link>
       </nav>
 
-      <div className="grid grid-cols-1 gap-6 rounded-[30px] border border-[#ECE6DA] bg-[#FDFBF7] p-5 shadow-[0_24px_56px_-16px_rgba(14,75,39,0.11)] sm:p-8 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 rounded-[30px] border border-brand-border bg-brand-surface p-5 shadow-[0_24px_56px_-16px_rgba(61,122,30,0.12)] sm:p-8 md:grid-cols-2">
         {/* Imagen principal con su aspect-ratio exacto de DB */}
         <div
           className="overflow-hidden rounded-[22px] bg-[#EAE4D7]"
@@ -125,50 +123,46 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={`/catalogo?categoria=${product.category.slug}`}
-                className="inline-flex rounded-full bg-[#E6F0EA] px-3.5 py-1 text-xs font-semibold text-[#0E4B27] transition-colors hover:bg-[#d4e6db]"
+                className="inline-flex rounded-full bg-brand-sky-light px-3.5 py-1 text-xs font-semibold text-brand-sky-dark transition-colors hover:bg-brand-sky/30"
               >
                 {product.category.name}
               </Link>
 
               {product.expirationBadge === "TODAY" ? (
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-[#FDF3E6] px-3 py-1 text-xs font-bold text-[#7A3E0A]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#C86D14]" />
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-amber px-3 py-1 text-xs font-bold text-brand-ink">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-ink" />
                   Vence hoy
                 </span>
               ) : product.expirationBadge === "TEMPORARY" ? (
-                <span className="inline-flex items-center rounded-full bg-[#F6F3EC] px-3 py-1 text-xs font-semibold text-[#0E4B27]">
+                <span className="inline-flex items-center rounded-full bg-brand-green-soft px-3 py-1 text-xs font-semibold text-brand-green">
                   Oferta temporal
                 </span>
               ) : null}
             </div>
 
-            <h1 className="mt-3.5 text-xl font-extrabold leading-snug text-[#1C2420] sm:text-2xl">
+            <h1 className="mt-3.5 text-xl font-extrabold leading-snug text-brand-ink sm:text-2xl">
               {product.title}
             </h1>
 
-            <p className="mt-2 text-2xl font-black text-[#0E4B27]">
-              {formattedPrice}
-            </p>
-
-            <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-[#1C2420]">
+            <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-brand-ink">
               {product.description}
             </p>
 
-            <div className="mt-6 rounded-2xl border border-[#ECE6DA] bg-[#F6F3EC] p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#9E8229]">
+            <div className="mt-6 rounded-2xl border border-brand-border bg-brand-cream p-4">
+              <p className="text-xs font-semibold uppercase tracking-wider text-brand-amber-text">
                 Elaborado / ofrecido por
               </p>
-              <p className="mt-1 text-sm font-bold text-[#1C2420]">
+              <p className="mt-1 text-sm font-bold text-brand-ink">
                 {product.entrepreneur.businessName}
               </p>
-              <p className="text-xs font-medium text-[#525E57]">
+              <p className="text-xs font-medium text-brand-muted">
                 {product.entrepreneur.ownerName}
                 {product.entrepreneur.neighborhood
                   ? ` · ${product.entrepreneur.neighborhood}`
                   : ""}
               </p>
               {product.entrepreneur.bio ? (
-                <p className="mt-2 text-xs leading-relaxed text-[#525E57]">
+                <p className="mt-2 text-xs leading-relaxed text-brand-muted">
                   {product.entrepreneur.bio}
                 </p>
               ) : null}
@@ -180,7 +174,7 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
               href={whatsappUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#0E4B27] px-5 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_-8px_rgba(14,75,39,0.32)] transition-all hover:-translate-y-0.5 hover:bg-[#0A381D] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0E4B27] focus-visible:ring-offset-2"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-brand-green px-5 py-3.5 text-sm font-bold text-white shadow-[0_12px_28px_-8px_rgba(61,122,30,0.34)] transition-all hover:-translate-y-0.5 hover:bg-brand-green-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2"
             >
               <svg
                 aria-hidden="true"
@@ -193,7 +187,7 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
               <span>Contactar por WhatsApp</span>
             </a>
 
-            <p className="text-center text-[11px] font-medium text-[#525E57]">
+            <p className="text-center text-[11px] font-medium text-brand-muted">
               Al tocar el botón se abrirá WhatsApp para coordinar el pago y la
               entrega directamente con {product.entrepreneur.businessName}.
             </p>

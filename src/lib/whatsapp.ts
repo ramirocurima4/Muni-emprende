@@ -41,6 +41,17 @@ export function buildProductWhatsappUrl({
   return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
 }
 
+/**
+ * Genera un enlace a WhatsApp para contacto institucional (ej. sumarse a MuniEmprende).
+ */
+export function buildInstitutionalWhatsappUrl(
+  rawPhone: string,
+  message: string,
+): string {
+  const normalizedPhone = normalizeWhatsappNumber(rawPhone);
+  return `https://wa.me/${normalizedPhone}?text=${encodeURIComponent(message)}`;
+}
+
 const arsFormatter = new Intl.NumberFormat("es-AR", {
   style: "currency",
   currency: "ARS",

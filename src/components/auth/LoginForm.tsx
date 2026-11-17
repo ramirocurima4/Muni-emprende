@@ -28,7 +28,7 @@ export function LoginForm() {
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     const formData = new FormData(event.currentTarget);
     const rawInput = {
-      email: String(formData.get("email") ?? ""),
+      username: String(formData.get("username") ?? ""),
       password: String(formData.get("password") ?? ""),
     };
 
@@ -62,24 +62,26 @@ export function LoginForm() {
 
       <div>
         <label
-          htmlFor="email"
+          htmlFor="username"
           className="block text-xs font-bold uppercase tracking-wide text-[#2C302E]"
         >
-          Correo electrónico
+          Nombre de usuario
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="username"
+          name="username"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           required
-          defaultValue={serverState.values?.email ?? ""}
-          placeholder="tu.nombre@ejemplo.com"
+          defaultValue={serverState.values?.username ?? ""}
+          placeholder="Ej. sabores.sanroque"
           className="mt-1.5 w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2.5 text-sm text-[#2C302E] placeholder:text-[#5A615D]/75 focus:border-[#3F5E47] focus:bg-[#FDFCFA] focus:outline-none focus:ring-2 focus:ring-[#3F5E47]/25"
         />
-        {fieldErrors.email?.[0] ? (
+        {fieldErrors.username?.[0] ? (
           <p className="mt-1 text-xs font-medium text-[#9B2226]">
-            {fieldErrors.email[0]}
+            {fieldErrors.username[0]}
           </p>
         ) : null}
       </div>

@@ -16,7 +16,6 @@ import {
 import { db } from "@/lib/db";
 import { getProductImageUrl } from "@/lib/images";
 import { getSession } from "@/lib/session";
-import { formatPriceArs } from "@/lib/whatsapp";
 
 export const metadata: Metadata = {
   title: "Centro de Comando · Auditoría Municipal",
@@ -71,8 +70,8 @@ async function AdminContent() {
   ] = await Promise.all([
     db.entrepreneur.findMany({
       include: {
-        user: { select: { email: true } },
-        approver: { select: { email: true } },
+        user: { select: { username: true, email: true } },
+        approver: { select: { username: true, email: true } },
         _count: { select: { products: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -104,6 +103,7 @@ async function AdminContent() {
       include: {
         actor: {
           select: {
+            username: true,
             email: true,
             role: true,
           },
@@ -123,7 +123,7 @@ async function AdminContent() {
       businessName: e.businessName,
       slug: e.slug,
       ownerName: e.ownerName,
-      email: e.user.email,
+      email: e.user.email ?? `@${e.user.username}`,
       whatsappNumber: e.whatsappNumber,
       neighborhood: e.neighborhood,
       bio: e.bio,
@@ -140,7 +140,6 @@ async function AdminContent() {
         title: p.title,
         slug: p.slug,
         description: p.description,
-        priceFormatted: formatPriceArs(p.priceArs),
         categoryName: p.category.name,
         expiresAtFormatted: p.expiresAt
           ? dateFormatter.format(p.expiresAt)
@@ -237,7 +236,7 @@ async function AdminContent() {
       businessName: e.businessName,
       slug: e.slug,
       ownerName: e.ownerName,
-      email: e.user.email,
+      email: e.user.email ?? `@${e.user.username}`,
       whatsappNumber: e.whatsappNumber,
       neighborhood: e.neighborhood,
       status: e.status,
@@ -245,7 +244,9 @@ async function AdminContent() {
       approvedAtFormatted: e.approvedAt
         ? dateFormatter.format(e.approvedAt)
         : null,
-      approverEmail: e.approver?.email ?? null,
+      approverEmail: e.approver
+        ? (e.approver.email ?? `@${e.approver.username}`)
+        : null,
     }),
   );
 
@@ -271,7 +272,7 @@ async function AdminContent() {
     return {
       id: log.id,
       createdAtFormatted: dateFormatter.format(log.createdAt),
-      actorEmail: log.actor?.email ?? "Sistema Automático",
+      actorEmail: log.actor ? (log.actor.email ?? `@${log.actor.username}`) : "Sistema Automático",
       actorRole: log.actor?.role ?? "SYSTEM",
       action: log.action,
       entityType: log.entityType,
@@ -296,7 +297,7 @@ async function AdminContent() {
               Centro de Comando · {session.role}
             </span>
             <span className="text-xs font-medium text-[#5A615D]">
-              Moderador activo: <strong className="text-[#2C302E]">{session.email}</strong>
+              Moderador activo: <strong className="text-[#2C302E]">@{session.username}</strong>
             </span>
           </div>
           <h1 className="mt-2 text-xl font-extrabold tracking-tight text-[#2C302E] sm:text-2xl">

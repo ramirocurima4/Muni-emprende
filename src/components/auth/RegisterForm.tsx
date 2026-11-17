@@ -40,7 +40,7 @@ export function RegisterForm() {
     const rawInput = {
       ownerName: String(formData.get("ownerName") ?? ""),
       businessName: String(formData.get("businessName") ?? ""),
-      email: String(formData.get("email") ?? ""),
+      username: String(formData.get("username") ?? ""),
       whatsappNumber: String(formData.get("whatsappNumber") ?? ""),
       neighborhood: String(formData.get("neighborhood") ?? ""),
       bio: String(formData.get("bio") ?? ""),
@@ -135,24 +135,30 @@ export function RegisterForm() {
 
       <div>
         <label
-          htmlFor="email"
+          htmlFor="username"
           className="block text-xs font-bold uppercase tracking-wide text-[#2C302E]"
         >
-          Correo electrónico *
+          Nombre de Usuario (para iniciar sesión) *
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="username"
+          name="username"
+          type="text"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
           required
-          defaultValue={serverState.values?.email ?? ""}
-          placeholder="tu.emprendimiento@ejemplo.com"
+          defaultValue={serverState.values?.username ?? ""}
+          placeholder="Ej. sabores.sanroque"
           className="mt-1.5 w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2.5 text-sm text-[#2C302E] placeholder:text-[#5A615D]/75 focus:border-[#3F5E47] focus:bg-[#FDFCFA] focus:outline-none focus:ring-2 focus:ring-[#3F5E47]/25"
         />
-        {fieldErrors.email?.[0] ? (
+        <p className="mt-1 text-[11px] text-[#5A615D]">
+          Usá letras minúsculas y números sin espacios. Lo vas a utilizar junto
+          con tu contraseña para ingresar.
+        </p>
+        {fieldErrors.username?.[0] ? (
           <p className="mt-1 text-xs font-medium text-[#9B2226]">
-            {fieldErrors.email[0]}
+            {fieldErrors.username[0]}
           </p>
         ) : null}
       </div>
@@ -163,7 +169,7 @@ export function RegisterForm() {
             htmlFor="whatsappNumber"
             className="block text-xs font-bold uppercase tracking-wide text-[#2C302E]"
           >
-            WhatsApp de ventas *
+            WhatsApp de ventas (Obligatorio) *
           </label>
           <input
             id="whatsappNumber"
@@ -177,7 +183,7 @@ export function RegisterForm() {
             className="mt-1.5 w-full rounded-2xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2.5 text-sm text-[#2C302E] placeholder:text-[#5A615D]/75 focus:border-[#3F5E47] focus:bg-[#FDFCFA] focus:outline-none focus:ring-2 focus:ring-[#3F5E47]/25"
           />
           <p className="mt-1 text-[11px] text-[#5A615D]">
-            Sin 0 ni 15.{" "}
+            Obligatorio para que los vecinos puedan contactarte. Sin 0 ni 15.{" "}
             {isPhoneValidPreview ? (
               <a
                 href={`https://wa.me/${normalizedPhone}?text=${encodeURIComponent("Hola! Estoy probando mi enlace de WhatsApp para MuniEmprende San Roque.")}`}

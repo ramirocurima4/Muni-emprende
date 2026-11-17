@@ -1,6 +1,10 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/session";
+import {
+  isEntrepreneurRole,
+  SESSION_COOKIE_NAME,
+  verifySessionToken,
+} from "@/lib/session";
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -19,7 +23,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl);
     }
 
-    if (session.role !== "ENTREPRENEUR") {
+    if (!isEntrepreneurRole(session.role)) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
 

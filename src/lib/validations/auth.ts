@@ -1,12 +1,23 @@
 import { z } from "zod";
 import { normalizeWhatsappNumber } from "@/lib/whatsapp";
 
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(3, "Ingresá un nombre de usuario de al menos 3 caracteres.")
+  .max(60, "El nombre de usuario no puede superar los 60 caracteres.")
+  .transform((v) => v.toLowerCase())
+  .refine((v) => /^[a-z0-9._-]+$/.test(v), {
+    message:
+      "Usá solo letras, números, puntos, guiones o guión bajo (sin espacios).",
+  });
+
 export const loginSchema = z.object({
-  email: z
+  username: z
     .string()
     .trim()
-    .min(1, "Ingresá tu correo electrónico.")
-    .email("Ingresá un correo electrónico válido.")
+    .min(3, "Ingresá tu nombre de usuario.")
+    .max(60, "El nombre de usuario es demasiado largo.")
     .transform((v) => v.toLowerCase()),
   password: z
     .string()
@@ -26,16 +37,11 @@ export const registerEntrepreneurSchema = z
       .trim()
       .min(2, "Ingresá el nombre de tu emprendimiento.")
       .max(120, "El nombre del emprendimiento es demasiado largo."),
-    email: z
-      .string()
-      .trim()
-      .min(1, "Ingresá tu correo electrónico.")
-      .email("Ingresá un correo electrónico válido.")
-      .transform((v) => v.toLowerCase()),
+    username: usernameSchema,
     whatsappNumber: z
       .string()
       .trim()
-      .min(8, "Ingresá tu número de WhatsApp con característica.")
+      .min(8, "El WhatsApp es obligatorio. Ingresá tu número con característica.")
       .max(25, "El número de WhatsApp es demasiado largo.")
       .refine(
         (val) => {

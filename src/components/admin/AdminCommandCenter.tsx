@@ -21,7 +21,6 @@ export interface PendingProductRow {
   title: string;
   slug: string;
   description: string;
-  priceFormatted: string;
   categoryName: string;
   expiresAtFormatted: string | null;
   entrepreneurName: string;
@@ -548,9 +547,6 @@ export function AdminCommandCenter({
                           <span className="inline-flex rounded-full bg-[#DDE6DF] px-2.5 py-0.5 text-[11px] font-bold text-[#273B2C]">
                             {prod.categoryName}
                           </span>
-                          <p className="text-sm font-black text-[#3F5E47]">
-                            {prod.priceFormatted}
-                          </p>
                           {prod.expiresAtFormatted ? (
                             <p className="text-[11px] font-semibold text-[#613406]">
                               Vence: {prod.expiresAtFormatted}
