@@ -1,342 +1,249 @@
+import {
+  AlertTriangle,
+  ArrowRight,
+  Camera,
+  ClipboardCheck,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { logoutAction } from "@/app/actions/auth";
+import AdminLoading from "@/app/admin/loading";
 import {
-  AdminCommandCenter,
-  type AdminOverviewStats,
-  type AuditLogRow,
-  type CategoryDistributionItem,
-  type EntrepreneurDirectoryRow,
-  type PendingEntrepreneurRow,
-  type PendingProductRow,
-  type RejectedRecordRow,
-} from "@/components/admin/AdminCommandCenter";
-import { db } from "@/lib/db";
-import { getProductImageUrl } from "@/lib/images";
-import { getSession } from "@/lib/session";
+  BTN_PRIMARY,
+  BTN_SECONDARY,
+  EmptyState,
+  PageHeader,
+  Panel,
+  SectionTitle,
+  StatCard,
+  StatusBadge,
+} from "@/components/admin/ui";
+import {
+  describeAuditAction,
+  ENTITY_TYPE_LABELS,
+  formatDateTime,
+} from "@/lib/admin-labels";
+import { requireAdminPage } from "@/lib/server/admin-auth";
+import {
+  auditTargetName,
+  getAdminOverview,
+  getCategoryOffer,
+  getRecentActivity,
+} from "@/lib/server/admin-data";
 
 export const metadata: Metadata = {
-  title: "Centro de Comando · Auditoría Municipal",
+  title: "Inicio · Panel de Administración",
 };
-
-const dateFormatter = new Intl.DateTimeFormat("es-AR", {
-  day: "2-digit",
-  month: "2-digit",
-  year: "numeric",
-  hour: "2-digit",
-  minute: "2-digit",
-});
 
 export default function AdminPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-6xl space-y-4 px-4 py-8">
-          <div className="h-32 animate-pulse rounded-3xl bg-[#E6E1D6]/60" />
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-            <div className="h-28 animate-pulse rounded-3xl bg-[#E6E1D6]/60" />
-            <div className="h-28 animate-pulse rounded-3xl bg-[#E6E1D6]/60" />
-            <div className="h-28 animate-pulse rounded-3xl bg-[#E6E1D6]/60" />
-            <div className="h-28 animate-pulse rounded-3xl bg-[#E6E1D6]/60" />
-          </div>
-          <div className="h-80 animate-pulse rounded-3xl bg-[#E6E1D6]/60" />
-        </div>
-      }
-    >
-      <AdminContent />
+    <Suspense fallback={<AdminLoading />}>
+      <AdminHomeContent />
     </Suspense>
   );
 }
 
-async function AdminContent() {
-  const session = await getSession();
-  if (
-    !session ||
-    (session.role !== "ADMIN" && session.role !== "MODERATOR")
-  ) {
-    redirect("/login");
-  }
+async function AdminHomeContent() {
+  const admin = await requireAdminPage();
 
-  const now = new Date();
-
-  const [
-    allEntrepreneurs,
-    allProducts,
-    categories,
-    rawAuditLogs,
-    totalAuditEvents,
-  ] = await Promise.all([
-    db.entrepreneur.findMany({
-      include: {
-        user: { select: { username: true, email: true } },
-        approver: { select: { username: true, email: true } },
-        _count: { select: { products: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.product.findMany({
-      include: {
-        category: { select: { id: true, name: true, slug: true } },
-        entrepreneur: {
-          select: {
-            id: true,
-            businessName: true,
-            ownerName: true,
-            status: true,
-          },
-        },
-        images: {
-          orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }],
-          take: 1,
-          select: { relativePath: true, width: true, height: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.category.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-    }),
-    db.auditLog.findMany({
-      include: {
-        actor: {
-          select: {
-            username: true,
-            email: true,
-            role: true,
-          },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      take: 60,
-    }),
-    db.auditLog.count(),
+  const [overview, categories, recentActivity] = await Promise.all([
+    getAdminOverview(),
+    getCategoryOffer(),
+    getRecentActivity(8),
   ]);
 
-  // 1. Filtrar listas de moderación
-  const pendingEntrepreneurs: PendingEntrepreneurRow[] = allEntrepreneurs
-    .filter((e) => e.status === "PENDING")
-    .map((e) => ({
-      id: e.id,
-      businessName: e.businessName,
-      slug: e.slug,
-      ownerName: e.ownerName,
-      email: e.user.email ?? `@${e.user.username}`,
-      whatsappNumber: e.whatsappNumber,
-      neighborhood: e.neighborhood,
-      bio: e.bio,
-      createdAtIso: e.createdAt.toISOString(),
-      createdAtFormatted: dateFormatter.format(e.createdAt),
-    }));
-
-  const pendingProducts: PendingProductRow[] = allProducts
-    .filter((p) => p.status === "PENDING")
-    .map((p) => {
-      const img = p.images[0];
-      return {
-        id: p.id,
-        title: p.title,
-        slug: p.slug,
-        description: p.description,
-        categoryName: p.category.name,
-        expiresAtFormatted: p.expiresAt
-          ? dateFormatter.format(p.expiresAt)
-          : null,
-        entrepreneurName: p.entrepreneur.businessName,
-        entrepreneurOwner: p.entrepreneur.ownerName,
-        entrepreneurStatus: p.entrepreneur.status,
-        thumbUrl: img ? getProductImageUrl(img.relativePath, "thumb") : null,
-        imgWidth: img?.width ?? 200,
-        imgHeight: img?.height ?? 200,
-        createdAtFormatted: dateFormatter.format(p.createdAt),
-      };
-    });
-
-  const rejectedRecords: RejectedRecordRow[] = [
-    ...allEntrepreneurs
-      .filter((e) => e.status === "REJECTED")
-      .map((e) => ({
-        id: e.id,
-        entityType: "ENTREPRENEUR" as const,
-        titleOrBusiness: e.businessName,
-        subtitle: e.ownerName,
-        rejectionReason: e.rejectionReason ?? "Sin motivo especificado",
-        updatedAtFormatted: dateFormatter.format(e.updatedAt),
-      })),
-    ...allProducts
-      .filter((p) => p.status === "REJECTED")
-      .map((p) => ({
-        id: p.id,
-        entityType: "PRODUCT" as const,
-        titleOrBusiness: p.title,
-        subtitle: p.entrepreneur.businessName,
-        rejectionReason: p.rejectionReason ?? "Sin motivo especificado",
-        updatedAtFormatted: dateFormatter.format(p.updatedAt),
-      })),
-  ];
-
-  // 2. Calcular métricas generales y distribución por categorías
-  const activeProductsList = allProducts.filter(
-    (p) =>
-      p.status === "APPROVED" &&
-      p.entrepreneur.status === "APPROVED" &&
-      (!p.expiresAt || p.expiresAt > now),
-  );
-
-  const stats: AdminOverviewStats = {
-    activeEntrepreneurs: allEntrepreneurs.filter((e) => e.status === "APPROVED")
-      .length,
-    pendingEntrepreneurs: pendingEntrepreneurs.length,
-    rejectedEntrepreneurs: allEntrepreneurs.filter(
-      (e) => e.status === "REJECTED",
-    ).length,
-    activeProducts: activeProductsList.length,
-    pendingProducts: pendingProducts.length,
-    rejectedProducts: allProducts.filter((p) => p.status === "REJECTED").length,
-    expiringProductsCount: activeProductsList.filter((p) => p.expiresAt !== null)
-      .length,
-    totalAuditEvents,
-  };
-
-  const totalApprovedProducts = Math.max(activeProductsList.length, 1);
-
-  const categoryDistribution: CategoryDistributionItem[] = categories.map(
-    (cat) => {
-      const catApproved = activeProductsList.filter(
-        (p) => p.categoryId === cat.id,
-      );
-      const catPending = allProducts.filter(
-        (p) => p.categoryId === cat.id && p.status === "PENDING",
-      );
-      const uniqueEntrepreneurs = new Set(
-        catApproved.map((p) => p.entrepreneurId),
-      );
-
-      return {
-        id: cat.id,
-        name: cat.name,
-        slug: cat.slug,
-        approvedProductsCount: catApproved.length,
-        pendingProductsCount: catPending.length,
-        entrepreneursCount: uniqueEntrepreneurs.size,
-        sharePercentage:
-          activeProductsList.length > 0
-            ? Math.round((catApproved.length / totalApprovedProducts) * 100)
-            : 0,
-      };
-    },
-  );
-
-  // 3. Padrón de Emprendedores
-  const entrepreneurDirectory: EntrepreneurDirectoryRow[] = allEntrepreneurs.map(
-    (e) => ({
-      id: e.id,
-      businessName: e.businessName,
-      slug: e.slug,
-      ownerName: e.ownerName,
-      email: e.user.email ?? `@${e.user.username}`,
-      whatsappNumber: e.whatsappNumber,
-      neighborhood: e.neighborhood,
-      status: e.status,
-      productsCount: e._count.products,
-      approvedAtFormatted: e.approvedAt
-        ? dateFormatter.format(e.approvedAt)
-        : null,
-      approverEmail: e.approver
-        ? (e.approver.email ?? `@${e.approver.username}`)
-        : null,
-    }),
-  );
-
-  // 4. Visor de Auditoría (enriquecido con nombres de entidades y moderador)
-  const entrepreneurNameById = new Map(
-    allEntrepreneurs.map((e) => [e.id, e.businessName]),
-  );
-  const productNameById = new Map(allProducts.map((p) => [p.id, p.title]));
-
-  const auditLogs: AuditLogRow[] = rawAuditLogs.map((log) => {
-    const meta =
-      log.metadata && typeof log.metadata === "object"
-        ? (log.metadata as Record<string, unknown>)
-        : {};
-
-    const targetName =
-      (typeof meta.businessName === "string" && meta.businessName) ||
-      (typeof meta.title === "string" && meta.title) ||
-      entrepreneurNameById.get(log.entityId) ||
-      productNameById.get(log.entityId) ||
-      `Registro #${log.entityId.slice(0, 8)}`;
-
-    return {
-      id: log.id,
-      createdAtFormatted: dateFormatter.format(log.createdAt),
-      actorEmail: log.actor ? (log.actor.email ?? `@${log.actor.username}`) : "Sistema Automático",
-      actorRole: log.actor?.role ?? "SYSTEM",
-      action: log.action,
-      entityType: log.entityType,
-      entityId: log.entityId,
-      targetName,
-      previousStatus:
-        typeof meta.previousStatus === "string" ? meta.previousStatus : null,
-      newStatus: typeof meta.newStatus === "string" ? meta.newStatus : null,
-      rejectionReason:
-        typeof meta.rejectionReason === "string" ? meta.rejectionReason : null,
-      note: typeof meta.note === "string" ? meta.note : null,
-    };
-  });
+  const totalPending =
+    overview.productsPending + overview.entrepreneursPending;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-3.5 py-6 sm:px-6 sm:py-8">
-      {/* Cabecera Institucional del Centro de Comando */}
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-[#E6E1D6] bg-[#FDFCFA] p-5 shadow-2xs sm:p-7">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex rounded-full bg-[#3F5E47] px-2.5 py-0.5 text-[11px] font-bold text-white">
-              Centro de Comando · {session.role}
-            </span>
-            <span className="text-xs font-medium text-[#5A615D]">
-              Moderador activo: <strong className="text-[#2C302E]">@{session.username}</strong>
-            </span>
-          </div>
-          <h1 className="mt-2 text-xl font-extrabold tracking-tight text-[#2C302E] sm:text-2xl">
-            Dirección de Modernización y Empleo · San Roque
-          </h1>
-          <p className="mt-0.5 text-xs sm:text-sm text-[#5A615D]">
-            Gestión integral del padrón de emprendedores, moderación de
-            publicaciones, estadísticas por rubro y auditoría de acciones.
-          </p>
-        </div>
+    <div className="space-y-6">
+      <PageHeader
+        title="Panel de Administración"
+        description={`Bienvenido/a @${admin.username}. Resumen general de MuniEmprende San Roque.`}
+        actions={
+          <>
+            <Link href="/admin/moderacion" className={BTN_PRIMARY}>
+              <ClipboardCheck className="h-4 w-4" aria-hidden="true" />
+              <span>
+                {totalPending > 0
+                  ? `Revisar pendientes (${totalPending})`
+                  : "Ir a Moderación"}
+              </span>
+            </Link>
+            <Link href="/admin/galeria" className={BTN_SECONDARY}>
+              <Camera className="h-4 w-4" aria-hidden="true" />
+              <span>Subir foto de Expo</span>
+            </Link>
+          </>
+        }
+      />
 
-        <div className="flex items-center gap-2">
-          <Link
-            href="/"
-            className="rounded-xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 text-xs font-bold text-[#2C302E] transition-colors hover:bg-[#DDE6DF] hover:text-[#273B2C]"
-          >
-            Ver Vidriera Pública ↗
-          </Link>
-          <form action={logoutAction}>
-            <button
-              type="submit"
-              className="rounded-xl border border-[#E6E1D6] bg-[#FAF7F2] px-3.5 py-2 text-xs font-bold text-[#5A615D] transition-colors hover:border-[#D98282] hover:bg-[#FDF2F2] hover:text-[#7A1C1C]"
-            >
-              Cerrar sesión
-            </button>
-          </form>
-        </div>
+      {/* 4 tarjetas principales */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <StatCard
+          label="Productos por revisar"
+          value={overview.productsPending}
+          tone={overview.productsPending > 0 ? "amber" : "green"}
+          hint={
+            overview.oldestPendingProductAt
+              ? `El más antiguo: ${formatDateTime(overview.oldestPendingProductAt)}`
+              : "Sin productos en espera"
+          }
+          href="/admin/moderacion"
+        />
+        <StatCard
+          label="Emprendimientos por habilitar"
+          value={overview.entrepreneursPending}
+          tone={overview.entrepreneursPending > 0 ? "amber" : "green"}
+          hint={
+            overview.entrepreneursPending > 0
+              ? "Esperan verificación de la Muni"
+              : "Todos revisados"
+          }
+          href="/admin/moderacion#emprendimientos"
+        />
+        <StatCard
+          label="Emprendimientos activos"
+          value={overview.entrepreneursActive}
+          tone="green"
+          hint={`${overview.entrepreneursTrusted} con publicación directa`}
+          href="/admin/emprendedores"
+        />
+        <StatCard
+          label="Productos publicados"
+          value={overview.productsPublished}
+          tone="sky"
+          hint={`${overview.expoPhotosPublished} fotos en la Galería de Expos`}
+          href="/admin/metricas"
+        />
       </div>
 
-      {/* Centro de Comando con Pestañas (Moderación | Estadísticas | Auditoría) */}
-      <AdminCommandCenter
-        stats={stats}
-        pendingEntrepreneurs={pendingEntrepreneurs}
-        pendingProducts={pendingProducts}
-        rejectedRecords={rejectedRecords}
-        categoryDistribution={categoryDistribution}
-        entrepreneurDirectory={entrepreneurDirectory}
-        auditLogs={auditLogs}
-      />
+      {/* Alerta de rubros vacíos */}
+      {overview.emptyCategories.length > 0 ? (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-3xl border border-brand-amber/60 bg-brand-amber-soft px-5 py-4 text-sm text-brand-amber-text"
+        >
+          <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+          <div className="space-y-1">
+            <p className="font-extrabold">
+              Hay {overview.emptyCategories.length}{" "}
+              {overview.emptyCategories.length === 1
+                ? "rubro sin productos publicados"
+                : "rubros sin productos publicados"}
+            </p>
+            <p className="text-xs leading-relaxed">
+              Todavía no tienen oferta visible en el catálogo:{" "}
+              <strong>
+                {overview.emptyCategories.map((c) => c.name).join(", ")}
+              </strong>
+              . Es una buena oportunidad para invitar emprendedores de esos rubros.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Oferta por rubro */}
+        <Panel>
+          <SectionTitle
+            title="Oferta por rubro"
+            description="Productos visibles hoy en cada categoría."
+          />
+
+          <ul className="space-y-3">
+            {categories.map((cat) => (
+              <li key={cat.id} className="space-y-1">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-bold text-brand-ink">{cat.name}</span>
+                  <span className="text-xs font-semibold text-brand-muted">
+                    <strong className="text-brand-ink">
+                      {cat.publishedProducts}
+                    </strong>{" "}
+                    {cat.publishedProducts === 1 ? "producto" : "productos"} ·{" "}
+                    {cat.entrepreneurs}{" "}
+                    {cat.entrepreneurs === 1 ? "emprend." : "emprends."}
+                  </span>
+                </div>
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-brand-sky-tint">
+                  <div
+                    className={`h-full rounded-full ${
+                      cat.publishedProducts > 0
+                        ? "bg-brand-green"
+                        : "bg-brand-amber/50"
+                    }`}
+                    style={{
+                      width: `${Math.max(cat.sharePercentage, cat.publishedProducts > 0 ? 6 : 0)}%`,
+                    }}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-5 pt-3 border-t border-brand-border">
+            <Link
+              href="/admin/metricas"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-green hover:text-brand-green-dark"
+            >
+              <span>Ver métricas completas</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </Panel>
+
+        {/* Actividad reciente */}
+        <Panel>
+          <SectionTitle
+            title="Últimos movimientos"
+            description="Qué pasó recientemente en la plataforma."
+          />
+
+          {recentActivity.length === 0 ? (
+            <EmptyState
+              title="Sin movimientos recientes"
+              description="Cuando se aprueben productos, se sumen emprendedores o se suban fotos aparecerán acá."
+            />
+          ) : (
+            <ul className="divide-y divide-brand-border/70">
+              {recentActivity.map((log) => {
+                const info = describeAuditAction(log.action);
+                const target = auditTargetName(log.metadata);
+                const entityLabel =
+                  ENTITY_TYPE_LABELS[log.entityType] ?? log.entityType;
+
+                return (
+                  <li key={log.id} className="py-3 first:pt-0 last:pb-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <StatusBadge label={info.label} tone={info.tone} />
+                      <span className="shrink-0 text-xs text-brand-muted">
+                        {formatDateTime(log.createdAt)}
+                      </span>
+                    </div>
+                    <p className="mt-1.5 text-sm font-semibold text-brand-ink">
+                      {target ?? entityLabel}
+                      <span className="font-normal text-brand-muted">
+                        {" "}
+                        · {log.actor ? `@${log.actor.username}` : "Sistema"}
+                      </span>
+                    </p>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <div className="mt-4 pt-3 border-t border-brand-border">
+            <Link
+              href="/admin/actividad"
+              className="inline-flex items-center gap-1.5 text-sm font-bold text-brand-green hover:text-brand-green-dark"
+            >
+              <span>Ver historial completo</span>
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        </Panel>
+      </div>
     </div>
   );
 }

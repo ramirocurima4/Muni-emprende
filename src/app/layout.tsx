@@ -62,8 +62,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="es-AR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-brand-cream text-brand-ink">
-        <header className="sticky top-0 z-30 border-b border-brand-border/75 bg-brand-cream/95 backdrop-blur-md">
+      <body className="min-h-full flex flex-col bg-[#E8F1F8] text-brand-ink">
+        <header className="sticky top-0 z-50 border-b border-brand-sky/30 bg-[#E8F1F8] shadow-xs shadow-brand-sky/10">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5 px-3.5 py-2.5 sm:gap-4 sm:px-8 sm:py-3">
             <Link
               href="/"

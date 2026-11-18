@@ -119,14 +119,14 @@ export function CategoryVisualFilters({
   return (
     <nav
       aria-label="Filtrar por categoría"
-      className="no-scrollbar -mx-4 flex items-center gap-2.5 overflow-x-auto px-4 py-1.5 sm:mx-0 sm:flex-wrap sm:px-0"
+      className="no-scrollbar flex items-center gap-2.5 overflow-x-auto py-1.5 sm:flex-wrap sm:gap-3"
     >
       <Link
         href={buildCategoryHref(undefined, activeQuery)}
         className={`group inline-flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 ${
           !activeCategorySlug
-            ? "bg-brand-green text-white shadow-lg shadow-brand-green/20"
-            : "bg-brand-surface text-brand-ink shadow-md shadow-black/5 hover:bg-brand-sky-tint hover:text-brand-sky-dark"
+            ? "bg-brand-green text-white shadow-md shadow-brand-green/20"
+            : "border border-brand-sky/25 bg-brand-sky-bg text-brand-ink hover:bg-brand-sky-tint hover:text-brand-sky-dark"
         }`}
       >
         <span
@@ -151,8 +151,8 @@ export function CategoryVisualFilters({
             href={buildCategoryHref(cat.slug, activeQuery)}
             className={`group inline-flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 ${
               isSelected
-                ? "bg-brand-green text-white shadow-lg shadow-brand-green/20"
-                : "bg-brand-surface text-brand-ink shadow-md shadow-black/5 hover:bg-brand-sky-tint hover:text-brand-sky-dark"
+                ? "bg-brand-green text-white shadow-md shadow-brand-green/20"
+                : "border border-brand-sky/25 bg-brand-sky-bg text-brand-ink hover:bg-brand-sky-tint hover:text-brand-sky-dark"
             }`}
           >
             <span

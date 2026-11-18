@@ -15,12 +15,21 @@ const ALLOWED_ISOBMFF_BRANDS = new Set([
   "msf1",
 ]);
 
+export type UploadFolder = "products" | "avatars" | "expos";
+
 export interface SavedProductImageVariants {
   relativePath: string;
   width: number;
   height: number;
   fullFilePath: string;
   thumbFilePath: string;
+}
+
+function getUploadRoot(): string {
+  return path.resolve(
+    process.cwd(),
+    process.env.UPLOAD_DIR ?? "./storage/uploads",
+  );
 }
 
 /**
@@ -68,11 +77,13 @@ export function hasSupportedImageMagicBytes(buffer: Buffer): boolean {
 }
 
 /**
- * Valida magic bytes, elimina metadatos EXIF, re-encodea a WebP (thumb 480px y full 1200px)
+ * Valida magic bytes, elimina metadatos EXIF, re-encodea a WebP (thumb 480px y full)
  * con nombre UUID aleatorio y devuelve la ruta relativa y dimensiones reales.
  */
-export async function processAndSaveProductImage(
+export async function processAndSaveImageVariants(
   file: File,
+  folder: UploadFolder,
+  fullMaxWidth = 1200,
 ): Promise<SavedProductImageVariants> {
   if (file.size <= 0) {
     throw new Error("El archivo de imagen está vacío.");
@@ -94,7 +105,7 @@ export async function processAndSaveProductImage(
   // sharp.rotate() aplica orientación EXIF antes de descartar todos los metadatos EXIF por defecto
   const fullPipeline = sharp(inputBuffer)
     .rotate()
-    .resize({ width: 1200, withoutEnlargement: true })
+    .resize({ width: fullMaxWidth, withoutEnlargement: true })
     .webp({ quality: 82 });
 
   const thumbPipeline = sharp(inputBuffer)
@@ -117,12 +128,9 @@ export async function processAndSaveProductImage(
   const year = String(now.getUTCFullYear());
   const month = String(now.getUTCMonth() + 1).padStart(2, "0");
   const uuid = crypto.randomUUID();
-  const relativePath = `products/${year}/${month}/${uuid}`;
+  const relativePath = `${folder}/${year}/${month}/${uuid}`;
 
-  const uploadRoot = path.resolve(
-    process.cwd(),
-    process.env.UPLOAD_DIR ?? "./storage/uploads",
-  );
+  const uploadRoot = getUploadRoot();
   const fullFilePath = path.join(uploadRoot, `${relativePath}_full.webp`);
   const thumbFilePath = path.join(uploadRoot, `${relativePath}_thumb.webp`);
 
@@ -142,6 +150,24 @@ export async function processAndSaveProductImage(
   };
 }
 
+export async function processAndSaveProductImage(
+  file: File,
+): Promise<SavedProductImageVariants> {
+  return processAndSaveImageVariants(file, "products", 1200);
+}
+
+export async function processAndSaveAvatarImage(
+  file: File,
+): Promise<SavedProductImageVariants> {
+  return processAndSaveImageVariants(file, "avatars", 800);
+}
+
+export async function processAndSaveExpoImage(
+  file: File,
+): Promise<SavedProductImageVariants> {
+  return processAndSaveImageVariants(file, "expos", 1600);
+}
+
 /**
  * Elimina las variantes WebP generadas si falla la persistencia en base de datos.
  */
@@ -152,4 +178,29 @@ export async function removeUploadedProductImageVariants(
     fs.unlink(variants.fullFilePath),
     fs.unlink(variants.thumbFilePath),
   ]);
+}
+
+/**
+ * Elimina de forma segura las variantes WebP de una ruta relativa almacenada en DB.
+ */
+export async function removeStoredImageVariantsByRelativePath(
+  relativePath: string | null | undefined,
+): Promise<void> {
+  if (!relativePath) return;
+
+  const clean = relativePath.replace(/^\/+|\/+$/g, "");
+  if (!clean || clean.includes("..")) return;
+
+  const uploadRoot = getUploadRoot();
+  const fullFilePath = path.resolve(uploadRoot, `${clean}_full.webp`);
+  const thumbFilePath = path.resolve(uploadRoot, `${clean}_thumb.webp`);
+
+  if (
+    !fullFilePath.startsWith(uploadRoot + path.sep) ||
+    !thumbFilePath.startsWith(uploadRoot + path.sep)
+  ) {
+    return;
+  }
+
+  await Promise.allSettled([fs.unlink(fullFilePath), fs.unlink(thumbFilePath)]);
 }

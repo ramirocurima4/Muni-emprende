@@ -33,6 +33,7 @@ const config: Config = {
             DEFAULT: "#7498D0",
             light: "#DCE9F9",
             tint: "#EDF4FC",
+            bg: "#E8F1F8",
             dark: "#1F4478",
           },
           cream: "#FDFBF7",

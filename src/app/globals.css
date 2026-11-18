@@ -2,6 +2,7 @@
 @config "../../tailwind.config.ts";
 
 :root {
+  --bg-sky-pastel: #e8f1f8;
   --bg-cream: #fdfbf7;
   --surface-card: #ffffff;
   --border-subtle: #e6e4dc;
@@ -25,7 +26,7 @@
 }
 
 @theme inline {
-  --color-background: var(--bg-cream);
+  --color-background: var(--bg-sky-pastel);
   --color-foreground: var(--text-ink);
   --color-surface: var(--surface-card);
   --color-border-subtle: var(--border-subtle);
@@ -38,7 +39,7 @@ html {
 }
 
 body {
-  background-color: var(--bg-cream);
+  background-color: var(--bg-sky-pastel);
   color: var(--text-ink);
   font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
 }

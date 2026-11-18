@@ -237,6 +237,7 @@ export async function createProductAction(
       return product;
     });
 
+    revalidatePath("/mi-emprendimiento");
     revalidatePath("/dashboard");
     revalidatePath("/admin");
 

@@ -23,12 +23,11 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
   });
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-[28px] bg-brand-surface shadow-2xl shadow-black/5 transition-all duration-300 ease-out sm:hover:-translate-y-1.5 sm:hover:shadow-[0_32px_64px_-12px_rgba(0,0,0,0.10)]">
-      {/* Espacio superior para la foto con aspect-ratio exacto desde DB (CLS = 0) */}
+    <article className="group flex h-full flex-col overflow-hidden rounded-[26px] border border-brand-sky/20 bg-brand-surface shadow-lg shadow-black/[0.04] transition-all duration-300 ease-out sm:hover:-translate-y-1 sm:hover:shadow-xl sm:hover:shadow-black/[0.08]">
+      {/* Espacio superior uniforme (aspect 4:5) con dimensiones reales desde DB (CLS = 0) */}
       <Link
         href={`/productos/${product.slug}`}
-        className="relative block w-full overflow-hidden rounded-t-[28px] bg-[#EAE4D7] focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-green"
-        style={{ aspectRatio: `${imgWidth} / ${imgHeight}` }}
+        className="relative block aspect-[4/5] w-full overflow-hidden rounded-t-[26px] bg-brand-sky-tint focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-green"
       >
         {thumbUrl ? (
           // eslint-disable-next-line @next/next/no-img-element

@@ -13,40 +13,13 @@ import {
   loginSchema,
   registerEntrepreneurSchema,
 } from "@/lib/validations/auth";
-import { slugifyText } from "@/lib/slug";
+import { generateUniqueEntrepreneurSlug } from "@/lib/server/entrepreneur-slug";
 import { normalizeWhatsappNumber } from "@/lib/whatsapp";
 
 export interface AuthActionState {
   error?: string;
   fieldErrors?: Record<string, string[]>;
   values?: Record<string, string>;
-}
-
-async function generateUniqueEntrepreneurSlug(
-  businessName: string,
-): Promise<string> {
-  const baseSlug = slugifyText(businessName, "emprendimiento");
-  const existing = await db.entrepreneur.findUnique({
-    where: { slug: baseSlug },
-    select: { id: true },
-  });
-
-  if (!existing) {
-    return baseSlug;
-  }
-
-  for (let attempt = 2; attempt <= 50; attempt++) {
-    const candidate = `${baseSlug}-${attempt}`;
-    const found = await db.entrepreneur.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!found) {
-      return candidate;
-    }
-  }
-
-  return `${baseSlug}-${Date.now().toString(36)}`;
 }
 
 export async function registerEntrepreneurAction(
@@ -57,6 +30,7 @@ export async function registerEntrepreneurAction(
     ownerName: String(formData.get("ownerName") ?? ""),
     businessName: String(formData.get("businessName") ?? ""),
     username: String(formData.get("username") ?? ""),
+    email: String(formData.get("email") ?? ""),
     whatsappNumber: String(formData.get("whatsappNumber") ?? ""),
     neighborhood: String(formData.get("neighborhood") ?? ""),
     bio: String(formData.get("bio") ?? ""),
@@ -68,6 +42,7 @@ export async function registerEntrepreneurAction(
     ownerName: rawValues.ownerName,
     businessName: rawValues.businessName,
     username: rawValues.username,
+    email: rawValues.email,
     whatsappNumber: rawValues.whatsappNumber,
     neighborhood: rawValues.neighborhood,
     bio: rawValues.bio,
@@ -100,6 +75,23 @@ export async function registerEntrepreneurAction(
     };
   }
 
+  if (data.email) {
+    const existingEmail = await db.user.findUnique({
+      where: { email: data.email },
+      select: { id: true },
+    });
+
+    if (existingEmail) {
+      return {
+        error: "Ese correo electrónico ya está asociado a otra cuenta.",
+        fieldErrors: {
+          email: ["Este correo ya está registrado. Podés dejarlo vacío o usar otro."],
+        },
+        values: safeEchoValues,
+      };
+    }
+  }
+
   const slug = await generateUniqueEntrepreneurSlug(data.businessName);
   const normalizedPhone = normalizeWhatsappNumber(data.whatsappNumber);
   const passwordHash = await bcrypt.hash(data.password, 12);
@@ -112,7 +104,7 @@ export async function registerEntrepreneurAction(
       const user = await tx.user.create({
         data: {
           username: data.username,
-          email: null,
+          email: data.email ?? null,
           passwordHash,
           role: UserRole.USER_NEW,
           isActive: true,
@@ -161,12 +153,12 @@ export async function registerEntrepreneurAction(
   await createSessionCookie({
     userId: createdUserId,
     username: data.username,
-    email: null,
+    email: data.email ?? null,
     role: UserRole.USER_NEW,
     entrepreneurId: createdEntrepreneurId,
   });
 
-  redirect("/dashboard");
+  redirect("/mi-emprendimiento");
 }
 
 export async function loginAction(
@@ -192,8 +184,13 @@ export async function loginAction(
 
   const { username, password } = parsed.data;
 
-  const user = await db.user.findUnique({
-    where: { username },
+  const user = await db.user.findFirst({
+    where: {
+      username: {
+        equals: username,
+        mode: "insensitive",
+      },
+    },
     include: {
       entrepreneur: {
         select: {
@@ -219,7 +216,10 @@ export async function loginAction(
     };
   }
 
-  if (user.entrepreneur?.status === EntrepreneurStatus.SUSPENDED) {
+  if (
+    user.role !== UserRole.ADMIN &&
+    user.entrepreneur?.status === EntrepreneurStatus.SUSPENDED
+  ) {
     return {
       error:
         "Tu cuenta de emprendedor se encuentra temporalmente suspendida. Comunicate con el área de Modernización y Empleo.",
@@ -235,11 +235,15 @@ export async function loginAction(
     entrepreneurId: user.entrepreneur?.id ?? null,
   });
 
-  if (user.role === UserRole.ADMIN || user.role === UserRole.MODERATOR) {
+  if (user.role === UserRole.ADMIN) {
     redirect("/admin");
   }
 
-  redirect("/dashboard");
+  if (user.role === UserRole.MODERATOR) {
+    redirect("/");
+  }
+
+  redirect("/mi-emprendimiento");
 }
 
 export async function logoutAction(): Promise<void> {

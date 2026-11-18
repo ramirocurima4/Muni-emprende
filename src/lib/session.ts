@@ -7,7 +7,7 @@ const SESSION_DURATION_SECONDS = 60 * 60 * 24 * 7; // 7 días
 export const sessionPayloadSchema = z.object({
   userId: z.string().uuid(),
   username: z.string().min(1),
-  email: z.string().email().nullable().optional(),
+  email: z.string().email().or(z.literal("")).nullable().optional(),
   role: z.enum(["USER_NEW", "USER_TRUSTED", "ENTREPRENEUR", "MODERATOR", "ADMIN"]),
   entrepreneurId: z.string().uuid().nullable().optional(),
   iat: z.number(),
@@ -75,6 +75,7 @@ export async function signSessionToken(
   const nowSeconds = Math.floor(Date.now() / 1000);
   const payload: SessionPayload = {
     ...input,
+    email: input.email ? input.email : null,
     iat: nowSeconds,
     exp: nowSeconds + SESSION_DURATION_SECONDS,
   };

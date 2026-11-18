@@ -2,9 +2,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Leaf } from "lucide-react";
 import { CategoryVisualFilters } from "@/components/catalog/CategoryVisualFilters";
+import { ExpoGallerySection } from "@/components/home/ExpoGallerySection";
 import { HomeProductShowcase } from "@/components/home/HomeProductShowcase";
 import { JoinUsSection } from "@/components/home/JoinUsSection";
 import { getHomeShowcaseData, getPublicCategories } from "@/lib/catalog";
+import { getPublicExpoPhotos } from "@/lib/expos";
 
 export default function HomePage() {
   return (
@@ -68,6 +70,11 @@ export default function HomePage() {
         <HomeShowcaseSection />
       </Suspense>
 
+      {/* 3b. Expo Emprendedores: fotos de la feria de los domingos (cargadas por Prensa desde /admin) */}
+      <Suspense fallback={null}>
+        <HomeExpoSection />
+      </Suspense>
+
       {/* 4. Sección Institucional 'Sumate a Nosotros' (Fondo verde vibrante + WhatsApp 3794 819378) */}
       <JoinUsSection />
     </div>
@@ -88,6 +95,11 @@ async function HomeShowcaseSection() {
       catalogProducts={catalogProducts}
     />
   );
+}
+
+async function HomeExpoSection() {
+  const photos = await getPublicExpoPhotos(8);
+  return <ExpoGallerySection photos={photos} />;
 }
 
 function HomeCategoriesSkeleton() {

@@ -32,25 +32,16 @@ export function CatalogContentSkeleton() {
         </div>
       </div>
 
-      {/* Esqueleto de Grilla Masonry (2 cols móvil, 3 tablet, 4 desktop) */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4 lg:gap-5">
-        {[
-          "aspect-[3/4]",
-          "aspect-[4/5]",
-          "aspect-[2/3]",
-          "aspect-square",
-          "aspect-[4/5]",
-          "aspect-[3/4]",
-          "aspect-square",
-          "aspect-[3/4]",
-        ].map((ratio, idx) => (
+      {/* Esqueleto de Grilla (2 cols móvil, 3 tablet, 4 desktop) */}
+      <div className="grid grid-cols-2 gap-3.5 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 lg:gap-5">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((idx) => (
           <div
             key={idx}
-            className={`overflow-hidden rounded-[28px] bg-brand-surface shadow-2xl shadow-black/5 ${
+            className={`overflow-hidden rounded-[26px] border border-brand-sky/20 bg-brand-surface shadow-lg shadow-black/[0.04] ${
               idx >= 6 ? "hidden lg:block" : idx >= 4 ? "hidden md:block" : ""
             }`}
           >
-            <div className={`${ratio} w-full animate-pulse bg-brand-border`} />
+            <div className="aspect-[4/5] w-full animate-pulse bg-brand-border" />
             <div className="space-y-2.5 p-3.5 sm:p-5">
               <div className="h-3 w-2/3 animate-pulse rounded-full bg-brand-border" />
               <div className="h-4 w-full animate-pulse rounded-full bg-brand-border/80" />

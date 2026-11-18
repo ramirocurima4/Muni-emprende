@@ -49,6 +49,7 @@ enum AuditEntityType {
   ENTREPRENEUR
   PRODUCT
   CATEGORY
+  EXPO_PHOTO
 
   @@map("audit_entity_type")
 }
@@ -72,6 +73,7 @@ model User {
   approvedEntrepreneurs Entrepreneur[] @relation("EntrepreneurApprovedBy")
   approvedProducts      Product[]      @relation("ProductApprovedBy")
   auditLogs             AuditLog[]
+  expoPhotos            ExpoPhoto[]
 
   @@index([role, isActive])
   @@map("users")
@@ -170,6 +172,26 @@ model ProductImage {
   @@index([productId, sortOrder])
   @@index([productId, isPrimary])
   @@map("product_images")
+}
+
+model ExpoPhoto {
+  id           String   @id @default(uuid()) @db.Uuid
+  relativePath String   @map("relative_path") @db.VarChar(255)
+  width        Int
+  height       Int
+  eventDate    DateTime @map("event_date") @db.Date
+  caption      String   @db.VarChar(200)
+  isPublished  Boolean  @default(true) @map("is_published")
+  uploadedById String?  @map("uploaded_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relaciones
+  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([isPublished, eventDate(sort: Desc)])
+  @@index([uploadedById])
+  @@map("expo_photos")
 }
 
 model AuditLog {

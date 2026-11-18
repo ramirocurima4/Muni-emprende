@@ -10,17 +10,17 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col px-3.5 py-8 sm:px-6 sm:py-12">
+    <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8 sm:px-6 sm:py-12">
       <div className="mb-6 text-center">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#DDE6DF] px-3 py-1 text-xs font-semibold text-[#273B2C]">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-green-soft px-3.5 py-1 text-xs font-bold text-brand-green-dark">
           Portal Oficial · San Roque
         </span>
-        <h1 className="mt-2.5 text-2xl font-extrabold tracking-tight text-[#2C302E]">
+        <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-brand-ink sm:text-3xl">
           Ingresar a MuniEmprende
         </h1>
-        <p className="mt-1 text-xs sm:text-sm text-[#5A615D]">
-          Accedé a tu panel para gestionar tus productos o administrar el
-          catálogo municipal.
+        <p className="mt-1.5 text-xs leading-relaxed text-brand-muted sm:text-sm">
+          Accedé con tu nombre de usuario y contraseña para gestionar tus
+          productos.
         </p>
       </div>
 
@@ -29,9 +29,9 @@ export default function LoginPage() {
       <div className="mt-6 text-center">
         <Link
           href="/"
-          className="text-xs font-semibold text-[#5A615D] hover:text-[#2C302E]"
+          className="text-xs font-semibold text-brand-muted transition-colors hover:text-brand-green-dark"
         >
-          ← Volver al catálogo público
+          ← Volver al inicio
         </Link>
       </div>
     </div>

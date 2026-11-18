@@ -7,48 +7,42 @@ import {
 } from "@/lib/session";
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const token = request.cookies.get(SESSION_COOKIE_NAME)?.value;
   const session = await verifySessionToken(token);
 
-  const isDashboardRoute =
-    pathname === "/dashboard" || pathname.startsWith("/dashboard/");
+  const isEntrepreneurPanelRoute =
+    pathname === "/mi-emprendimiento" ||
+    pathname.startsWith("/mi-emprendimiento/") ||
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/");
   const isAdminRoute = pathname === "/admin" || pathname.startsWith("/admin/");
   const isAuthPage = pathname === "/login" || pathname === "/registro";
 
-  if (isDashboardRoute) {
+  // La autorización definitiva por rol se valida contra la base de datos viva en cada página y acción.
+  // En middleware solo exigimos sesión válida para evitar bloqueos por cookies con un rol desactualizado.
+  if (isEntrepreneurPanelRoute || isAdminRoute) {
     if (!session) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("next", pathname);
       return NextResponse.redirect(loginUrl);
-    }
-
-    if (!isEntrepreneurRole(session.role)) {
-      return NextResponse.redirect(new URL("/admin", request.url));
-    }
-
-    return NextResponse.next();
-  }
-
-  if (isAdminRoute) {
-    if (!session) {
-      const loginUrl = new URL("/login", request.url);
-      loginUrl.searchParams.set("next", pathname);
-      return NextResponse.redirect(loginUrl);
-    }
-
-    if (session.role !== "MODERATOR" && session.role !== "ADMIN") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
     return NextResponse.next();
   }
 
   if (isAuthPage && session) {
+    // Si llega con ?next=... (ej. cambio de cuenta o re-login hacia /admin), permitimos mostrar el formulario.
+    if (pathname === "/login" && searchParams.has("next")) {
+      return NextResponse.next();
+    }
+
     const target =
-      session.role === "ADMIN" || session.role === "MODERATOR"
+      session.role === "ADMIN"
         ? "/admin"
-        : "/dashboard";
+        : isEntrepreneurRole(session.role)
+          ? "/mi-emprendimiento"
+          : "/";
     return NextResponse.redirect(new URL(target, request.url));
   }
 
@@ -56,5 +50,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/admin/:path*", "/login", "/registro"],
+  matcher: [
+    "/mi-emprendimiento/:path*",
+    "/dashboard/:path*",
+    "/admin/:path*",
+    "/login",
+    "/registro",
+  ],
 };

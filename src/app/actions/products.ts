@@ -136,6 +136,7 @@ export async function toggleProductAvailabilityAction(
       updateTag("public-products");
       updateTag("public-categories");
       updateTag(`product-${result.slug}`);
+      revalidatePath("/mi-emprendimiento");
       revalidatePath("/dashboard");
       revalidatePath("/catalogo");
       revalidatePath("/");

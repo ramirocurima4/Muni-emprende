@@ -22,9 +22,9 @@ interface CatalogPageProps {
 
 export default function CatalogPage({ searchParams }: CatalogPageProps) {
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-8 px-4 py-8 sm:space-y-10 sm:px-8 sm:py-12">
-      {/* Encabezado institucional del Catálogo Completo (Celeste claro + Crema) */}
-      <header className="rounded-[32px] border border-brand-sky/30 bg-gradient-to-br from-brand-sky-light/80 via-brand-surface to-brand-amber-soft/50 px-6 py-7 shadow-2xl shadow-black/5 sm:px-10 sm:py-9">
+    <div className="relative z-0 mx-auto w-full max-w-6xl space-y-8 px-4 pt-8 pb-12 sm:space-y-10 sm:px-8 sm:pt-12 sm:pb-16">
+      {/* Encabezado institucional del Catálogo Completo (Celeste claro) */}
+      <header className="rounded-[32px] border border-brand-sky/30 bg-gradient-to-br from-brand-sky-light/85 via-brand-surface to-brand-amber-soft/45 px-6 py-7 shadow-xl shadow-black/[0.04] sm:px-10 sm:py-9">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
@@ -76,14 +76,14 @@ async function CatalogContent({
   );
 
   return (
-    <section className="space-y-6 sm:space-y-8">
-      {/* Barra de Búsqueda y Filtros Visuales por Rubro */}
-      <div className="space-y-4">
+    <section className="space-y-7 sm:space-y-9">
+      {/* Barra de Búsqueda y Filtros Visuales por Rubro con espacio propio */}
+      <div className="space-y-5 rounded-[28px] border border-brand-sky/25 bg-brand-surface/85 p-4 shadow-lg shadow-black/[0.03] sm:p-5">
         <form
           action="/catalogo"
           method="GET"
           role="search"
-          className="flex items-center gap-3"
+          className="flex flex-col gap-3 sm:flex-row sm:items-center"
         >
           {activeCategorySlug ? (
             <input type="hidden" name="categoria" value={activeCategorySlug} />
@@ -103,25 +103,27 @@ async function CatalogContent({
               name="q"
               defaultValue={activeQuery ?? ""}
               placeholder="Buscar dulce de mamón, tejidos, mates, huerta..."
-              className="w-full rounded-2xl bg-brand-surface py-3.5 pr-4 pl-11 text-sm text-brand-ink shadow-xl shadow-black/5 placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-green/35"
+              className="w-full rounded-2xl border border-brand-sky/25 bg-brand-sky-bg py-3.5 pr-4 pl-11 text-sm text-brand-ink placeholder:text-brand-muted focus:border-brand-green focus:bg-brand-surface focus:outline-none focus:ring-2 focus:ring-brand-green/30"
             />
           </div>
 
           <button
             type="submit"
-            className="shrink-0 rounded-2xl bg-brand-green px-5 py-3.5 text-sm font-bold text-white shadow-xl shadow-brand-green/20 transition-all hover:-translate-y-0.5 hover:bg-brand-green-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2"
+            className="w-full shrink-0 rounded-2xl bg-brand-green px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-green/20 transition-all hover:bg-brand-green-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 sm:w-auto"
           >
             Buscar
           </button>
         </form>
 
-        {/* Tira de filtros visuales con íconos vectoriales redondos (Lucide React) */}
-        <CategoryVisualFilters
-          categories={categories}
-          activeCategorySlug={activeCategorySlug}
-          activeQuery={activeQuery}
-          variant="catalog"
-        />
+        <div className="border-t border-brand-sky/20 pt-4">
+          {/* Tira de filtros visuales con íconos vectoriales redondos (Lucide React) */}
+          <CategoryVisualFilters
+            categories={categories}
+            activeCategorySlug={activeCategorySlug}
+            activeQuery={activeQuery}
+            variant="catalog"
+          />
+        </div>
       </div>
 
       {/* Resumen de filtros activos */}

@@ -38,6 +38,19 @@ export const registerEntrepreneurSchema = z
       .min(2, "Ingresá el nombre de tu emprendimiento.")
       .max(120, "El nombre del emprendimiento es demasiado largo."),
     username: usernameSchema,
+    email: z
+      .string()
+      .trim()
+      .max(255, "El correo electrónico es demasiado largo.")
+      .optional()
+      .transform((val) => (val && val.length > 0 ? val.toLowerCase() : undefined))
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        {
+          message:
+            "Si ingresás un correo electrónico, verificá que sea válido.",
+        },
+      ),
     whatsappNumber: z
       .string()
       .trim()
