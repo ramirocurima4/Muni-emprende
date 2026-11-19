@@ -28,9 +28,15 @@ export async function getPublicSystemConfig(): Promise<PublicSystemConfig> {
   cacheTag("public-system-config", "public-fairs");
   cacheLife("minutes");
 
-  const row = await db.systemConfig.findUnique({
-    where: { key: "institutional" },
-  });
+  let row = null;
+  try {
+    row = await db.systemConfig.findUnique({
+      where: { key: "institutional" },
+    });
+  } catch {
+    // Fallback seguro durante el build de la imagen Docker (cuando la DB aún no está conectada)
+    row = null;
+  }
 
   const expoMeta = FAIR_META.EXPO_EMPRENDEDORES;
   const mercadoMeta = FAIR_META.MERCADO_SANROQUENO;

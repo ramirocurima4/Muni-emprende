@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
-const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [];
+const remotePatterns: NonNullable<NextConfig["images"]>["remotePatterns"] = [
+  {
+    protocol: "https",
+    hostname: "images.unsplash.com",
+    pathname: "/**",
+  },
+];
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
 
 if (supabaseUrl) {
@@ -20,6 +26,7 @@ if (supabaseUrl) {
 
 const nextConfig: NextConfig = {
   /* config options here */
+  output: "standalone",
   images: {
     unoptimized: true,
     remotePatterns,

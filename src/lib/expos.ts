@@ -54,24 +54,30 @@ export async function getPublicFairAlbumsByType(
 
   const safeLimit = Math.min(Math.max(limit, 1), 60);
 
-  const albums = await db.fairAlbum.findMany({
-    where: { fairType, isPublished: true, media: { some: {} } },
-    orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
-    take: safeLimit,
-    include: {
-      media: {
-        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-        select: {
-          id: true,
-          mediaType: true,
-          relativePath: true,
-          width: true,
-          height: true,
-          sortOrder: true,
+  let albums;
+  try {
+    albums = await db.fairAlbum.findMany({
+      where: { fairType, isPublished: true, media: { some: {} } },
+      orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
+      take: safeLimit,
+      include: {
+        media: {
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+          select: {
+            id: true,
+            mediaType: true,
+            relativePath: true,
+            width: true,
+            height: true,
+            sortOrder: true,
+          },
         },
       },
-    },
-  });
+    });
+  } catch {
+    // Fallback seguro durante el build de la imagen Docker sin conexión a DB activa
+    return [];
+  }
 
   return albums.map((album) => ({
     id: album.id,

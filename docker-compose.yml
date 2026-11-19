@@ -1,0 +1,66 @@
+# ==============================================================================
+# Docker Compose — MuniEmprende San Roque (Producción VPS)
+# ==============================================================================
+# Modos de Base de Datos soportados:
+#
+# OPCIÓN A — PostgreSQL contenedorizado en el mismo VPS (por defecto en este archivo):
+#   En tu archivo .env definí:
+#   DATABASE_URL="postgresql://muniemprende:TU_CLAVE_DB@db:5432/muniemprende?schema=public"
+#   POSTGRES_USER="muniemprende"
+#   POSTGRES_PASSWORD="TU_CLAVE_DB"
+#   POSTGRES_DB="muniemprende"
+#
+# OPCIÓN B — PostgreSQL externo (Supabase Database o PostgreSQL nativo del VPS):
+#   1. En tu archivo .env apuntá DATABASE_URL directamente al servidor externo
+#      (ej. Supabase: "postgresql://postgres.[ref]:[pass]@aws-0-sa-east-1.pooler.supabase.com:5432/postgres").
+#   2. Podés comentar el bloque `depends_on` en `muniemprende-web` y el servicio `db`,
+#      o levantar únicamente la web con: `docker compose up -d --build --no-deps muniemprende-web`
+# ==============================================================================
+
+services:
+  muniemprende-web:
+    container_name: muniemprende-web
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      HOSTNAME: "0.0.0.0"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # Base de datos PostgreSQL 16 local en contenedor (opcional si se usa Supabase / DB externa)
+  db:
+    container_name: muniemprende-db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-muniemprende}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-muniemprende_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-muniemprende}
+    volumes:
+      - muniemprende_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER:-muniemprende} -d $${POSTGRES_DB:-muniemprende}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  muniemprende_pgdata:
+    name: muniemprende_pgdata

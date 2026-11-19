@@ -1,0 +1,36 @@
+# Dependencias y artefactos de compilación
+node_modules
+.next
+out
+build
+dist
+
+# Control de versiones y herramientas locales
+.git
+.gitignore
+.agents
+.vscode
+.idea
+
+# Variables de entorno y secretos (se inyectan en runtime desde el VPS)
+.env
+.env.*
+!.env.example
+
+# Plataforma móvil híbrida Capacitor
+android
+ios
+
+# Archivos subidos localmente y temporales
+public/uploads
+storage/uploads
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
+tmp
+temp

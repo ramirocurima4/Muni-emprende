@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "db:seed": "prisma db seed",
+    "demo:load": "tsx prisma/seed-demo.ts",
+    "demo:clean": "npx prisma db push --force-reset && npx prisma db seed",
     "postinstall": "prisma skills sync || exit 0"
   },
   "dependencies": {
