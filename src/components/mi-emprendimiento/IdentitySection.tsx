@@ -35,6 +35,9 @@ export function IdentitySection({
   const [whatsappNumber, setWhatsappNumber] = useState(profile.whatsappNumber);
   const [neighborhood, setNeighborhood] = useState(profile.neighborhood);
   const [bio, setBio] = useState(profile.bio);
+  const [hasPickup, setHasPickup] = useState(profile.hasPickup);
+  const [hasDelivery, setHasDelivery] = useState(profile.hasDelivery);
+  const [atFair, setAtFair] = useState(profile.atFair);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(profile.avatarUrl);
 
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
@@ -190,6 +193,9 @@ export function IdentitySection({
       whatsappNumber,
       neighborhood,
       bio,
+      hasPickup,
+      hasDelivery,
+      atFair,
     });
 
     if (!parsed.success) {
@@ -208,6 +214,9 @@ export function IdentitySection({
       body.set("whatsappNumber", parsed.data.whatsappNumber);
       body.set("neighborhood", parsed.data.neighborhood ?? "");
       body.set("bio", parsed.data.bio ?? "");
+      body.set("hasPickup", String(parsed.data.hasPickup));
+      body.set("hasDelivery", String(parsed.data.hasDelivery));
+      body.set("atFair", String(parsed.data.atFair));
 
       const response = await fetch("/api/mi-emprendimiento/perfil", {
         method: "PATCH",
@@ -231,6 +240,9 @@ export function IdentitySection({
         neighborhood: data.profile.neighborhood,
         bio: data.profile.bio,
         avatarUrl: data.profile.avatarUrl,
+        hasPickup: data.profile.hasPickup,
+        hasDelivery: data.profile.hasDelivery,
+        atFair: data.profile.atFair,
         status: data.profile.status,
         rejectionReason: data.profile.rejectionReason,
       };
@@ -239,6 +251,9 @@ export function IdentitySection({
       setWhatsappNumber(updated.whatsappNumber);
       setNeighborhood(updated.neighborhood);
       setBio(updated.bio);
+      setHasPickup(updated.hasPickup);
+      setHasDelivery(updated.hasDelivery);
+      setAtFair(updated.atFair);
       onProfileUpdated(updated);
 
       setFormMessage({
@@ -499,6 +514,48 @@ export function IdentitySection({
             </p>
           ) : null}
         </div>
+
+        {/* Modalidades de entrega */}
+        <fieldset className="space-y-2.5 rounded-2xl border border-brand-sky/35 bg-[#E8F1F8]/65 p-4">
+          <legend className="text-sm font-extrabold text-brand-ink">
+            Modalidades de entrega
+          </legend>
+          <p className="text-xs text-brand-muted">
+            Elegí cómo pueden retirar o recibir tus productos los vecinos.
+          </p>
+
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-brand-sky/40 bg-white px-3.5 py-3 text-sm font-bold text-brand-ink transition-colors hover:border-brand-green">
+              <input
+                type="checkbox"
+                checked={hasPickup}
+                onChange={(e) => setHasPickup(e.target.checked)}
+                className="h-5 w-5 rounded border-brand-sky text-brand-green focus:ring-brand-green"
+              />
+              <span>Retiro en mi barrio</span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-brand-sky/40 bg-white px-3.5 py-3 text-sm font-bold text-brand-ink transition-colors hover:border-brand-green">
+              <input
+                type="checkbox"
+                checked={hasDelivery}
+                onChange={(e) => setHasDelivery(e.target.checked)}
+                className="h-5 w-5 rounded border-brand-sky text-brand-green focus:ring-brand-green"
+              />
+              <span>Hago envíos en San Roque</span>
+            </label>
+
+            <label className="flex cursor-pointer items-center gap-2.5 rounded-xl border border-brand-sky/40 bg-white px-3.5 py-3 text-sm font-bold text-brand-ink transition-colors hover:border-brand-green">
+              <input
+                type="checkbox"
+                checked={atFair}
+                onChange={(e) => setAtFair(e.target.checked)}
+                className="h-5 w-5 rounded border-brand-sky text-brand-green focus:ring-brand-green"
+              />
+              <span>Participo en la Feria</span>
+            </label>
+          </div>
+        </fieldset>
 
         {formMessage ? (
           <div

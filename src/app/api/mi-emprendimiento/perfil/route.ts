@@ -55,6 +55,9 @@ export async function PATCH(request: Request) {
     whatsappNumber: string;
     neighborhood: string | null;
     bio: string | null;
+    hasPickup: boolean;
+    hasDelivery: boolean;
+    atFair: boolean;
   } | null = null;
 
   if (!avatarOnly) {
@@ -63,6 +66,15 @@ export async function PATCH(request: Request) {
       whatsappNumber: String(formData.get("whatsappNumber") ?? ""),
       neighborhood: String(formData.get("neighborhood") ?? ""),
       bio: String(formData.get("bio") ?? ""),
+      hasPickup: formData.has("hasPickup")
+        ? String(formData.get("hasPickup")) === "true"
+        : entrepreneur.hasPickup,
+      hasDelivery: formData.has("hasDelivery")
+        ? String(formData.get("hasDelivery")) === "true"
+        : entrepreneur.hasDelivery,
+      atFair: formData.has("atFair")
+        ? String(formData.get("atFair")) === "true"
+        : entrepreneur.atFair,
     });
 
     if (!parsed.success) {
@@ -81,6 +93,9 @@ export async function PATCH(request: Request) {
       whatsappNumber: normalizeWhatsappNumber(parsed.data.whatsappNumber),
       neighborhood: parsed.data.neighborhood,
       bio: parsed.data.bio,
+      hasPickup: parsed.data.hasPickup,
+      hasDelivery: parsed.data.hasDelivery,
+      atFair: parsed.data.atFair,
     };
   }
 
@@ -119,8 +134,9 @@ export async function PATCH(request: Request) {
   const shouldResetRejected =
     !avatarOnly && entrepreneur.status === EntrepreneurStatus.REJECTED;
 
+  let updated;
   try {
-    const updated = await db.$transaction(async (tx) => {
+    updated = await db.$transaction(async (tx) => {
       const record = await tx.entrepreneur.update({
         where: { id: entrepreneur.id },
         data: {
@@ -130,6 +146,9 @@ export async function PATCH(request: Request) {
                 whatsappNumber: validatedText.whatsappNumber,
                 neighborhood: validatedText.neighborhood,
                 bio: validatedText.bio,
+                hasPickup: validatedText.hasPickup,
+                hasDelivery: validatedText.hasDelivery,
+                atFair: validatedText.atFair,
               }
             : {}),
           ...(savedAvatar || removeAvatar ? { avatarPath: nextAvatarPath } : {}),
@@ -149,6 +168,9 @@ export async function PATCH(request: Request) {
           neighborhood: true,
           bio: true,
           avatarPath: true,
+          hasPickup: true,
+          hasDelivery: true,
+          atFair: true,
           status: true,
           rejectionReason: true,
         },
@@ -174,35 +196,8 @@ export async function PATCH(request: Request) {
 
       return record;
     });
-
-    if (
-      (savedAvatar || removeAvatar) &&
-      previousAvatarPath &&
-      previousAvatarPath !== updated.avatarPath
-    ) {
-      await removeStoredImageVariantsByRelativePath(previousAvatarPath);
-    }
-
-    revalidateEntrepreneurAndCatalogSurfaces();
-
-    return NextResponse.json({
-      ok: true,
-      profile: {
-        id: updated.id,
-        businessName: updated.businessName,
-        slug: updated.slug,
-        ownerName: updated.ownerName,
-        whatsappNumber: updated.whatsappNumber,
-        neighborhood: updated.neighborhood ?? "",
-        bio: updated.bio ?? "",
-        avatarUrl: updated.avatarPath
-          ? getUploadImageUrl(updated.avatarPath, "thumb")
-          : null,
-        status: updated.status,
-        rejectionReason: updated.rejectionReason,
-      },
-    });
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/mi-emprendimiento/perfil] Error guardando perfil:", err);
     if (savedAvatar) {
       await removeUploadedProductImageVariants(savedAvatar);
     }
@@ -215,4 +210,39 @@ export async function PATCH(request: Request) {
       { status: 500 },
     );
   }
+
+  if (
+    (savedAvatar || removeAvatar) &&
+    previousAvatarPath &&
+    previousAvatarPath !== updated.avatarPath
+  ) {
+    await removeStoredImageVariantsByRelativePath(previousAvatarPath);
+  }
+
+  try {
+    revalidateEntrepreneurAndCatalogSurfaces();
+  } catch (err) {
+    console.warn("[PATCH /api/mi-emprendimiento/perfil] Error al revalidar caché:", err);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    profile: {
+      id: updated.id,
+      businessName: updated.businessName,
+      slug: updated.slug,
+      ownerName: updated.ownerName,
+      whatsappNumber: updated.whatsappNumber,
+      neighborhood: updated.neighborhood ?? "",
+      bio: updated.bio ?? "",
+      avatarUrl: updated.avatarPath
+        ? getUploadImageUrl(updated.avatarPath, "thumb")
+        : null,
+      hasPickup: updated.hasPickup,
+      hasDelivery: updated.hasDelivery,
+      atFair: updated.atFair,
+      status: updated.status,
+      rejectionReason: updated.rejectionReason,
+    },
+  });
 }

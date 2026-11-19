@@ -4,9 +4,6 @@ import { logoutAction } from "@/app/actions/auth";
 import { db } from "@/lib/db";
 import { getSession, isEntrepreneurRole } from "@/lib/session";
 
-const NAV_CATALOG_LINK_CLASS =
-  "rounded-xl px-2.5 py-1.5 text-xs font-semibold text-brand-ink transition-colors hover:bg-brand-sky-light/70 hover:text-brand-sky-dark sm:px-3";
-
 const NAV_PRIMARY_ACTION_CLASS =
   "inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#E4C268] bg-[#F7E09B] px-3 py-1.5 text-[11px] font-bold whitespace-nowrap text-brand-ink shadow-xs transition-colors hover:border-[#D9B14E] hover:bg-[#F2D57E] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-amber focus-visible:ring-offset-2 sm:px-4 sm:py-2 sm:text-xs";
 
@@ -29,12 +26,8 @@ export async function HeaderAuthNav() {
       return (
         <nav
           aria-label="Navegación interna de sesión"
-          className="flex items-center gap-1.5 sm:gap-2.5"
+          className="flex shrink-0 items-center gap-1.5 sm:gap-2.5"
         >
-          <Link href="/catalogo" className={NAV_CATALOG_LINK_CLASS}>
-            Catálogo
-          </Link>
-
           {hasPanel ? (
             <Link href={panelHref} className={NAV_PRIMARY_ACTION_CLASS}>
               <span
@@ -45,7 +38,7 @@ export async function HeaderAuthNav() {
             </Link>
           ) : null}
 
-          <span className="hidden md:inline-flex items-center rounded-lg border border-brand-sky/35 bg-brand-surface px-2.5 py-1 text-[11px] font-medium text-brand-muted">
+          <span className="hidden lg:inline-flex items-center rounded-lg border border-brand-sky/35 bg-brand-surface px-2.5 py-1 text-[11px] font-medium text-brand-muted">
             @{liveUser.username}
           </span>
 
@@ -65,11 +58,8 @@ export async function HeaderAuthNav() {
   return (
     <nav
       aria-label="Accesos públicos de cuenta"
-      className="flex items-center gap-1.5 sm:gap-2.5"
+      className="flex shrink-0 items-center gap-1.5 sm:gap-2.5"
     >
-      <Link href="/catalogo" className={NAV_CATALOG_LINK_CLASS}>
-        Catálogo
-      </Link>
       <Link href="/login" className={NAV_PRIMARY_ACTION_CLASS}>
         Acceso Emprendedores
       </Link>

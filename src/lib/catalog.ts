@@ -36,6 +36,7 @@ export interface PublicProductCardItem {
   title: string;
   slug: string;
   description: string;
+  isCombo: boolean;
   expiresAt: string | null;
   expirationBadge: ExpirationBadgeType;
   category: {
@@ -164,6 +165,7 @@ async function fetchCachedCatalogProducts(
         )
       ORDER BY
         word_similarity(unaccent(${query}), unaccent(p.title)) DESC,
+        p.updated_at DESC,
         p.created_at DESC
       LIMIT 60
     `);
@@ -210,7 +212,7 @@ async function fetchCachedCatalogProducts(
         },
       },
     },
-    orderBy: [{ createdAt: "desc" }],
+    orderBy: [{ updatedAt: "desc" }, { approvedAt: "desc" }, { createdAt: "desc" }],
     take: 48,
   });
 
@@ -219,6 +221,7 @@ async function fetchCachedCatalogProducts(
     title: p.title,
     slug: p.slug,
     description: p.description,
+    isCombo: p.isCombo,
     expiresAt: p.expiresAt ? p.expiresAt.toISOString() : null,
     expirationBadge: computeExpirationBadge(p.expiresAt, now),
     category: {
@@ -269,6 +272,9 @@ export async function getPublicProductBySlug(slug: string) {
           whatsappNumber: true,
           neighborhood: true,
           bio: true,
+          hasPickup: true,
+          hasDelivery: true,
+          atFair: true,
         },
       },
       images: {
@@ -291,6 +297,8 @@ export async function getPublicProductBySlug(slug: string) {
     title: product.title,
     slug: product.slug,
     description: product.description,
+    ingredients: product.ingredients,
+    isCombo: product.isCombo,
     expiresAt: product.expiresAt ? product.expiresAt.toISOString() : null,
     expirationBadge: computeExpirationBadge(product.expiresAt, now),
     category: product.category,
@@ -304,6 +312,8 @@ export interface FeaturedHomeProductItem {
   title: string;
   slug: string;
   description: string;
+  ingredients: string | null;
+  isCombo: boolean;
   expirationBadge: ExpirationBadgeType;
   category: {
     id: string;
@@ -318,6 +328,9 @@ export interface FeaturedHomeProductItem {
     whatsappNumber: string;
     neighborhood: string | null;
     bio: string | null;
+    hasPickup: boolean;
+    hasDelivery: boolean;
+    atFair: boolean;
   };
   primaryImage: {
     id: string;
@@ -340,6 +353,9 @@ const HOME_PRODUCT_INCLUDE = {
       whatsappNumber: true,
       neighborhood: true,
       bio: true,
+      hasPickup: true,
+      hasDelivery: true,
+      atFair: true,
     },
   },
   images: {
@@ -360,6 +376,8 @@ function mapHomeShowcaseProduct(
     title: string;
     slug: string;
     description: string;
+    ingredients: string | null;
+    isCombo: boolean;
     expiresAt: Date | null;
     category: { id: string; name: string; slug: string };
     entrepreneur: {
@@ -370,6 +388,9 @@ function mapHomeShowcaseProduct(
       whatsappNumber: string;
       neighborhood: string | null;
       bio: string | null;
+      hasPickup: boolean;
+      hasDelivery: boolean;
+      atFair: boolean;
     };
     images: Array<{
       id: string;
@@ -385,6 +406,8 @@ function mapHomeShowcaseProduct(
     title: p.title,
     slug: p.slug,
     description: p.description,
+    ingredients: p.ingredients,
+    isCombo: p.isCombo,
     expirationBadge: computeExpirationBadge(p.expiresAt, referenceNow),
     category: p.category,
     entrepreneur: p.entrepreneur,
@@ -411,7 +434,7 @@ export async function getFeaturedHomeProducts(
       OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
     },
     include: HOME_PRODUCT_INCLUDE,
-    orderBy: [{ approvedAt: "desc" }, { createdAt: "desc" }],
+    orderBy: [{ updatedAt: "desc" }, { approvedAt: "desc" }, { createdAt: "desc" }],
     take: safeLimit,
   });
 
@@ -435,23 +458,23 @@ export async function getHomeShowcaseData(): Promise<{
     OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
   };
 
-  const [gastronomyRaw, nonGastronomyRaw] = await Promise.all([
+  const [gastronomyRaw, allCatalogRaw] = await Promise.all([
     db.product.findMany({
       where: {
         ...baseWhere,
         category: { slug: "gastronomia", isActive: true },
       },
       include: HOME_PRODUCT_INCLUDE,
-      orderBy: [{ expiresAt: "asc" }, { approvedAt: "desc" }, { createdAt: "desc" }],
-      take: 6,
+      orderBy: [{ updatedAt: "desc" }, { expiresAt: "asc" }, { approvedAt: "desc" }],
+      take: 8,
     }),
     db.product.findMany({
       where: {
         ...baseWhere,
-        category: { slug: { not: "gastronomia" }, isActive: true },
+        category: { isActive: true },
       },
       include: HOME_PRODUCT_INCLUDE,
-      orderBy: [{ approvedAt: "desc" }, { createdAt: "desc" }],
+      orderBy: [{ updatedAt: "desc" }, { approvedAt: "desc" }, { createdAt: "desc" }],
       take: 12,
     }),
   ]);
@@ -459,9 +482,137 @@ export async function getHomeShowcaseData(): Promise<{
   const gastronomyProducts = gastronomyRaw.map((p) =>
     mapHomeShowcaseProduct(p, now),
   );
-  const catalogProducts = nonGastronomyRaw.map((p) =>
+  const catalogProducts = allCatalogRaw.map((p) =>
     mapHomeShowcaseProduct(p, now),
   );
 
   return { gastronomyProducts, catalogProducts };
+}
+
+export interface PublicEntrepreneurShowcaseItem {
+  id: string;
+  businessName: string;
+  slug: string;
+  neighborhood: string | null;
+  avatarPath: string | null;
+  whatsappNumber: string;
+  productCount: number;
+}
+
+export async function getPublicActiveEntrepreneurs(
+  limit = 20,
+): Promise<PublicEntrepreneurShowcaseItem[]> {
+  "use cache";
+  cacheTag("public-catalog", "public-entrepreneurs");
+  cacheLife("minutes");
+
+  const safeLimit = Math.min(Math.max(limit, 1), 36);
+  const now = new Date();
+
+  const rows = await db.entrepreneur.findMany({
+    where: {
+      status: EntrepreneurStatus.APPROVED,
+      user: { isActive: true },
+    },
+    orderBy: [{ approvedAt: "desc" }, { createdAt: "desc" }],
+    take: safeLimit,
+    select: {
+      id: true,
+      businessName: true,
+      slug: true,
+      neighborhood: true,
+      avatarPath: true,
+      whatsappNumber: true,
+      _count: {
+        select: {
+          products: {
+            where: {
+              status: ProductStatus.APPROVED,
+              OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return rows.map((row) => ({
+    id: row.id,
+    businessName: row.businessName,
+    slug: row.slug,
+    neighborhood: row.neighborhood,
+    avatarPath: row.avatarPath,
+    whatsappNumber: row.whatsappNumber,
+    productCount: row._count.products,
+  }));
+}
+
+export interface PublicEntrepreneurStorefront {
+  entrepreneur: {
+    id: string;
+    businessName: string;
+    slug: string;
+    ownerName: string;
+    whatsappNumber: string;
+    neighborhood: string | null;
+    bio: string | null;
+    avatarPath: string | null;
+    hasPickup: boolean;
+    hasDelivery: boolean;
+    atFair: boolean;
+  };
+  products: FeaturedHomeProductItem[];
+}
+
+export async function getPublicEntrepreneurStorefront(
+  slugOrId: string,
+): Promise<PublicEntrepreneurStorefront | null> {
+  "use cache";
+  cacheTag("public-catalog", "public-entrepreneurs", "public-products");
+  cacheLife("minutes");
+
+  const clean = slugOrId.trim().slice(0, 180);
+  if (!clean) return null;
+
+  const isUuid = z.string().uuid().safeParse(clean).success;
+  const now = new Date();
+
+  const entrepreneur = await db.entrepreneur.findFirst({
+    where: {
+      status: EntrepreneurStatus.APPROVED,
+      user: { isActive: true },
+      ...(isUuid ? { OR: [{ id: clean }, { slug: clean }] } : { slug: clean }),
+    },
+    select: {
+      id: true,
+      businessName: true,
+      slug: true,
+      ownerName: true,
+      whatsappNumber: true,
+      neighborhood: true,
+      bio: true,
+      avatarPath: true,
+      hasPickup: true,
+      hasDelivery: true,
+      atFair: true,
+    },
+  });
+
+  if (!entrepreneur) return null;
+
+  const productsRaw = await db.product.findMany({
+    where: {
+      entrepreneurId: entrepreneur.id,
+      status: ProductStatus.APPROVED,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+    },
+    include: HOME_PRODUCT_INCLUDE,
+    orderBy: [{ updatedAt: "desc" }, { approvedAt: "desc" }, { createdAt: "desc" }],
+    take: 48,
+  });
+
+  return {
+    entrepreneur,
+    products: productsRaw.map((p) => mapHomeShowcaseProduct(p, now)),
+  };
 }

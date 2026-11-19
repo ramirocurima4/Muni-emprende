@@ -47,6 +47,9 @@ export const ENTITY_TYPE_LABELS: Record<string, string> = {
   PRODUCT: "Producto",
   CATEGORY: "Rubro",
   EXPO_PHOTO: "Foto de Expo",
+  FAIR_CONFIG: "Cartelera de Feria",
+  FAIR_ALBUM: "Crónica de Feria",
+  SYSTEM_CONFIG: "Configuración Institucional",
 };
 
 export const AUDIT_ACTION_LABELS: Record<string, { label: string; tone: Tone }> =
@@ -87,6 +90,10 @@ export const AUDIT_ACTION_LABELS: Record<string, { label: string; tone: Tone }> 
     DELETE_PRODUCT: { label: "Eliminó un producto", tone: "red" },
     PAUSE_PRODUCT: { label: "Marcó un producto como agotado", tone: "sky" },
     RESUME_PRODUCT: { label: "Marcó un producto como disponible", tone: "sky" },
+    BUMP_PRODUCT_TODAY: {
+      label: "Activó tanda para hoy (subió arriba)",
+      tone: "green",
+    },
     APPROVE_PRODUCT: { label: "Aprobó un producto", tone: "green" },
     REJECT_PRODUCT: { label: "Pidió corrección de un producto", tone: "red" },
     SUSPEND_PRODUCT: { label: "Pausó un producto", tone: "red" },
@@ -100,6 +107,26 @@ export const AUDIT_ACTION_LABELS: Record<string, { label: string; tone: Tone }> 
       tone: "sky",
     },
     DELETE_EXPO_PHOTO: { label: "Eliminó una foto de Expo", tone: "red" },
+    UPDATE_FAIR_CONFIG: {
+      label: "Actualizó la cartelera de feria",
+      tone: "sky",
+    },
+    CREATE_FAIR_ALBUM: {
+      label: "Publicó una crónica de feria",
+      tone: "green",
+    },
+    SET_FAIR_ALBUM_PUBLISHED: {
+      label: "Mostró u ocultó una crónica de feria",
+      tone: "sky",
+    },
+    DELETE_FAIR_ALBUM: {
+      label: "Eliminó una crónica de feria",
+      tone: "red",
+    },
+    UPDATE_SYSTEM_CONFIG: {
+      label: "Actualizó la configuración institucional",
+      tone: "sky",
+    },
   };
 
 export function describeAuditAction(action: string): {

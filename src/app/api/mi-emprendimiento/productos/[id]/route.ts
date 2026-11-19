@@ -50,23 +50,39 @@ export async function PATCH(
 
   const { entrepreneur, session, isTrusted } = authContext;
 
-  const existingProduct = await db.product.findFirst({
-    where: {
-      id: idParsed.data,
-      entrepreneurId: entrepreneur.id,
-    },
-    select: {
-      id: true,
-      slug: true,
-      status: true,
-      approvedAt: true,
-      images: {
-        select: {
-          relativePath: true,
+  let existingProduct: {
+    id: string;
+    slug: string;
+    status: ProductStatus;
+    approvedAt: Date | null;
+    images: Array<{ relativePath: string }>;
+  } | null;
+
+  try {
+    existingProduct = await db.product.findFirst({
+      where: {
+        id: idParsed.data,
+        entrepreneurId: entrepreneur.id,
+      },
+      select: {
+        id: true,
+        slug: true,
+        status: true,
+        approvedAt: true,
+        images: {
+          select: {
+            relativePath: true,
+          },
         },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error("[PATCH /api/mi-emprendimiento/productos/[id]] Error consultando producto:", err);
+    return NextResponse.json(
+      { ok: false, error: "No pudimos consultar el producto en este momento." },
+      { status: 500 },
+    );
+  }
 
   if (!existingProduct) {
     return NextResponse.json(
@@ -100,6 +116,7 @@ export async function PATCH(
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     categoryId: String(formData.get("categoryId") ?? ""),
+    isCombo: String(formData.get("isCombo") ?? "") === "true",
     ingredients: String(formData.get("ingredients") ?? ""),
   };
 
@@ -116,17 +133,26 @@ export async function PATCH(
     );
   }
 
-  const category = await db.category.findFirst({
-    where: {
-      id: parsed.data.categoryId,
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-    },
-  });
+  let category: { id: string; name: string; slug: string } | null;
+  try {
+    category = await db.category.findFirst({
+      where: {
+        id: parsed.data.categoryId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+  } catch (err) {
+    console.error("[PATCH /api/mi-emprendimiento/productos/[id]] Error consultando rubro:", err);
+    return NextResponse.json(
+      { ok: false, error: "No pudimos verificar el rubro elegido." },
+      { status: 500 },
+    );
+  }
 
   if (!category) {
     return NextResponse.json(
@@ -164,9 +190,11 @@ export async function PATCH(
     }
   }
 
-  const cleanIngredients = isGastronomyCategory(category)
-    ? parsed.data.ingredients
-    : null;
+  const isCombo = Boolean(parsed.data.isCombo);
+  const cleanIngredients =
+    isCombo || isGastronomyCategory(category)
+      ? parsed.data.ingredients
+      : null;
   const now = new Date();
 
   let nextStatus: ProductStatus;
@@ -183,8 +211,9 @@ export async function PATCH(
     (img) => img.relativePath,
   );
 
+  let updatedProduct;
   try {
-    const updatedProduct = await db.$transaction(async (tx) => {
+    updatedProduct = await db.$transaction(async (tx) => {
       if (savedNewImage) {
         await tx.productImage.deleteMany({
           where: { productId: existingProduct.id },
@@ -208,6 +237,7 @@ export async function PATCH(
           title: parsed.data.title,
           description: parsed.data.description,
           ingredients: cleanIngredients,
+          isCombo,
           status: nextStatus,
           rejectionReason: null,
           approvedAt:
@@ -225,9 +255,11 @@ export async function PATCH(
           slug: true,
           description: true,
           ingredients: true,
+          isCombo: true,
           status: true,
           rejectionReason: true,
           createdAt: true,
+          updatedAt: true,
           category: {
             select: {
               id: true,
@@ -274,23 +306,8 @@ export async function PATCH(
 
       return updated;
     });
-
-    if (savedNewImage) {
-      await Promise.all(
-        previousImagePaths.map((oldPath) =>
-          removeStoredImageVariantsByRelativePath(oldPath),
-        ),
-      );
-    }
-
-    revalidateEntrepreneurAndCatalogSurfaces(updatedProduct.slug);
-
-    return NextResponse.json({
-      ok: true,
-      publishedDirectly: nextStatus === ProductStatus.APPROVED,
-      product: mapPanelProductItem(updatedProduct),
-    });
-  } catch {
+  } catch (err) {
+    console.error("[PATCH /api/mi-emprendimiento/productos/[id]] Error guardando cambios:", err);
     if (savedNewImage) {
       await removeUploadedProductImageVariants(savedNewImage);
     }
@@ -303,6 +320,26 @@ export async function PATCH(
       { status: 500 },
     );
   }
+
+  if (savedNewImage) {
+    await Promise.allSettled(
+      previousImagePaths
+        .filter((oldPath) => oldPath !== savedNewImage.relativePath)
+        .map((oldPath) => removeStoredImageVariantsByRelativePath(oldPath)),
+    );
+  }
+
+  try {
+    revalidateEntrepreneurAndCatalogSurfaces(updatedProduct.slug);
+  } catch (err) {
+    console.warn("[PATCH /api/mi-emprendimiento/productos/[id]] Error al revalidar caché:", err);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    publishedDirectly: nextStatus === ProductStatus.APPROVED,
+    product: mapPanelProductItem(updatedProduct),
+  });
 }
 
 export async function DELETE(
@@ -336,23 +373,39 @@ export async function DELETE(
 
   const { entrepreneur, session } = authContext;
 
-  const existingProduct = await db.product.findFirst({
-    where: {
-      id: idParsed.data,
-      entrepreneurId: entrepreneur.id,
-    },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      status: true,
-      images: {
-        select: {
-          relativePath: true,
+  let existingProduct: {
+    id: string;
+    title: string;
+    slug: string;
+    status: ProductStatus;
+    images: Array<{ relativePath: string }>;
+  } | null;
+
+  try {
+    existingProduct = await db.product.findFirst({
+      where: {
+        id: idParsed.data,
+        entrepreneurId: entrepreneur.id,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        status: true,
+        images: {
+          select: {
+            relativePath: true,
+          },
         },
       },
-    },
-  });
+    });
+  } catch (err) {
+    console.error("[DELETE /api/mi-emprendimiento/productos/[id]] Error consultando producto:", err);
+    return NextResponse.json(
+      { ok: false, error: "No pudimos consultar el producto en este momento." },
+      { status: 500 },
+    );
+  }
 
   if (!existingProduct) {
     return NextResponse.json(
@@ -384,20 +437,8 @@ export async function DELETE(
         },
       });
     });
-
-    await Promise.all(
-      existingProduct.images.map((img) =>
-        removeStoredImageVariantsByRelativePath(img.relativePath),
-      ),
-    );
-
-    revalidateEntrepreneurAndCatalogSurfaces(existingProduct.slug);
-
-    return NextResponse.json({
-      ok: true,
-      deletedId: existingProduct.id,
-    });
-  } catch {
+  } catch (err) {
+    console.error("[DELETE /api/mi-emprendimiento/productos/[id]] Error eliminando producto:", err);
     return NextResponse.json(
       {
         ok: false,
@@ -406,4 +447,21 @@ export async function DELETE(
       { status: 500 },
     );
   }
+
+  await Promise.allSettled(
+    existingProduct.images.map((img) =>
+      removeStoredImageVariantsByRelativePath(img.relativePath),
+    ),
+  );
+
+  try {
+    revalidateEntrepreneurAndCatalogSurfaces(existingProduct.slug);
+  } catch (err) {
+    console.warn("[DELETE /api/mi-emprendimiento/productos/[id]] Error al revalidar caché:", err);
+  }
+
+  return NextResponse.json({
+    ok: true,
+    deletedId: existingProduct.id,
+  });
 }

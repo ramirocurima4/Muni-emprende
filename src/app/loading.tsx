@@ -6,7 +6,7 @@ export default function HomeLoading() {
       className="mx-auto w-full max-w-6xl space-y-10 px-5 py-7 sm:space-y-14 sm:px-8 sm:py-12"
     >
       {/* Skeleton del Hero */}
-      <section className="rounded-[32px] bg-brand-sky-tint px-6 py-8 shadow-xl shadow-black/[0.04] sm:px-10 sm:py-12">
+      <section className="rounded-[32px] border border-[#A6C4E0] bg-[#D6E6F4] px-6 py-8 shadow-xl shadow-black/[0.04] sm:px-10 sm:py-12">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-2xl flex-1 space-y-3.5">
             <div className="h-4 w-52 animate-pulse rounded-full bg-brand-green/20" />

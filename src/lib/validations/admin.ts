@@ -81,36 +81,139 @@ export const createUserSchema = z
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 
-const MAX_EXPO_FUTURE_DAYS = 366;
+const MAX_EXPO_FUTURE_DAYS = 730;
 
-export const createExpoPhotoSchema = z.object({
-  caption: z
+const fairDateSchema = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí una fecha válida.")
+  .refine((val) => !Number.isNaN(Date.parse(`${val}T00:00:00.000Z`)), {
+    message: "La fecha no es válida.",
+  })
+  .refine(
+    (val) => {
+      const ms = Date.parse(`${val}T00:00:00.000Z`);
+      const limit = Date.now() + MAX_EXPO_FUTURE_DAYS * 24 * 60 * 60 * 1000;
+      return ms >= Date.parse("2020-01-01T00:00:00.000Z") && ms <= limit;
+    },
+    { message: "La fecha está fuera de rango." },
+  );
+
+export const fairTypeSchema = z.enum([
+  "EXPO_EMPRENDEDORES",
+  "MERCADO_SANROQUENO",
+]);
+
+const optionalMapsUrlSchema = z
+  .string()
+  .trim()
+  .max(500, "El link de Maps es demasiado largo.")
+  .optional()
+  .transform((val) => (val && val.length > 0 ? val : null))
+  .refine((val) => {
+    if (!val) return true;
+    try {
+      const parsed = new URL(val);
+      return parsed.protocol === "https:" || parsed.protocol === "http:";
+    } catch {
+      return false;
+    }
+  }, "Ingresá un enlace válido de Google Maps (https://...).");
+
+const optionalFairDateSchema = z
+  .string()
+  .trim()
+  .optional()
+  .transform((val) => (val && val.length > 0 ? val : null))
+  .refine(
+    (val) => val === null || fairDateSchema.safeParse(val).success,
+    "Elegí una fecha válida o dejala vacía.",
+  );
+
+export const updateFairConfigSchema = z.object({
+  fairType: fairTypeSchema,
+  nextDate: optionalFairDateSchema,
+  schedule: optionalText(80, "El horario es demasiado largo."),
+  location: optionalText(150, "El lugar es demasiado largo."),
+  mapsUrl: optionalMapsUrlSchema,
+  whatsappNumber: whatsappNumberSchema,
+});
+
+export const updateSystemConfigSchema = z.object({
+  employmentWhatsapp: whatsappNumberSchema,
+  productionWhatsapp: whatsappNumberSchema,
+  expoNextDate: optionalFairDateSchema,
+  expoSchedule: z
     .string()
     .trim()
-    .min(3, "Escribí una descripción corta (mínimo 3 letras).")
-    .max(200, "La descripción no puede superar las 200 letras."),
-  eventDate: z
+    .min(2, "Ingresá el horario de la Expo Emprendedores.")
+    .max(80, "El horario es demasiado largo."),
+  expoLocation: z
     .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, "Elegí la fecha de la Expo.")
-    .refine((val) => !Number.isNaN(Date.parse(`${val}T00:00:00.000Z`)), {
-      message: "La fecha no es válida.",
-    })
-    .refine(
-      (val) => {
-        const ms = Date.parse(`${val}T00:00:00.000Z`);
-        const limit = Date.now() + MAX_EXPO_FUTURE_DAYS * 24 * 60 * 60 * 1000;
-        return ms >= Date.parse("2020-01-01T00:00:00.000Z") && ms <= limit;
-      },
-      { message: "La fecha está fuera de rango." },
-    ),
+    .trim()
+    .min(2, "Ingresá el lugar de la Expo Emprendedores.")
+    .max(150, "El lugar es demasiado largo."),
+  expoMapsUrl: optionalMapsUrlSchema,
+  mercadoNextDate: optionalFairDateSchema,
+  mercadoSchedule: z
+    .string()
+    .trim()
+    .min(2, "Ingresá el horario del Mercado Sanroqueño.")
+    .max(80, "El horario es demasiado largo."),
+  mercadoLocation: z
+    .string()
+    .trim()
+    .min(2, "Ingresá el lugar del Mercado Sanroqueño.")
+    .max(150, "El lugar es demasiado largo."),
+  mercadoMapsUrl: optionalMapsUrlSchema,
+  authorityName: z
+    .string()
+    .trim()
+    .min(3, "Ingresá el nombre de la autoridad municipal.")
+    .max(120, "El nombre es demasiado largo."),
+  authorityTitle: z
+    .string()
+    .trim()
+    .min(3, "Ingresá el cargo de la autoridad municipal.")
+    .max(120, "El cargo es demasiado largo."),
+  legalDisclaimer: z
+    .string()
+    .trim()
+    .min(20, "El aviso legal debe tener al menos 20 letras.")
+    .max(600, "El aviso legal no puede superar las 600 letras."),
 });
 
-export const expoPhotoIdSchema = z.object({
-  id: uuid("Foto inválida."),
+export const createFairAlbumSchema = z.object({
+  fairType: fairTypeSchema,
+  title: z
+    .string()
+    .trim()
+    .min(3, "Escribí un título corto para la crónica (mínimo 3 letras).")
+    .max(140, "El título no puede superar las 140 letras."),
+  eventDate: fairDateSchema,
+  location: z
+    .string()
+    .trim()
+    .min(2, "Indicá el lugar de la feria (ej. Plaza Libertad).")
+    .max(120, "El lugar no puede superar las 120 letras."),
+  description: optionalText(
+    320,
+    "La descripción corta no puede superar las 320 letras.",
+  ),
+  videoUrl: z
+    .string()
+    .trim()
+    .max(500)
+    .optional()
+    .transform((val) => (val && val.length > 0 ? val : null)),
 });
 
-export const setExpoPhotoPublishedSchema = z.object({
-  id: uuid("Foto inválida."),
+export const fairAlbumIdSchema = z.object({
+  id: uuid("Crónica inválida."),
+});
+
+export const setFairAlbumPublishedSchema = z.object({
+  id: uuid("Crónica inválida."),
   published: z.boolean(),
 });
 
@@ -134,7 +237,16 @@ export const entrepreneursFilterSchema = z.object({
 
 export const auditFilterSchema = z.object({
   tipo: z
-    .enum(["USER", "ENTREPRENEUR", "PRODUCT", "CATEGORY", "EXPO_PHOTO"])
+    .enum([
+      "USER",
+      "ENTREPRENEUR",
+      "PRODUCT",
+      "CATEGORY",
+      "EXPO_PHOTO",
+      "FAIR_CONFIG",
+      "FAIR_ALBUM",
+      "SYSTEM_CONFIG",
+    ])
     .optional()
     .catch(undefined),
   q: z

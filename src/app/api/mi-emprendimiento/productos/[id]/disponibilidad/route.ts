@@ -45,6 +45,10 @@ export async function PATCH(
       typeof body === "object" && body !== null && "available" in body
         ? (body as { available: unknown }).available
         : undefined,
+    bump:
+      typeof body === "object" && body !== null && "bump" in body
+        ? Boolean((body as { bump: unknown }).bump)
+        : false,
   });
 
   if (!parsed.success) {
@@ -61,6 +65,7 @@ export async function PATCH(
   const targetStatus = parsed.data.available
     ? ProductStatus.APPROVED
     : ProductStatus.PAUSED;
+  const shouldBump = parsed.data.bump && targetStatus === ProductStatus.APPROVED;
 
   try {
     const result = await db.$transaction(async (tx) => {
@@ -92,17 +97,22 @@ export async function PATCH(
         };
       }
 
-      if (product.status === targetStatus) {
+      if (product.status === targetStatus && !shouldBump) {
         return {
           slug: product.slug,
           status: targetStatus,
           changed: false,
+          bumped: false,
         };
       }
 
+      const now = new Date();
       await tx.product.update({
         where: { id: product.id },
-        data: { status: targetStatus },
+        data: {
+          status: targetStatus,
+          updatedAt: now,
+        },
       });
 
       await tx.auditLog.create({
@@ -110,8 +120,9 @@ export async function PATCH(
           actorUserId: session.userId,
           entityType: AuditEntityType.PRODUCT,
           entityId: product.id,
-          action:
-            targetStatus === ProductStatus.PAUSED
+          action: shouldBump
+            ? "BUMP_PRODUCT_TODAY"
+            : targetStatus === ProductStatus.PAUSED
               ? "PAUSE_PRODUCT"
               : "RESUME_PRODUCT",
           metadata: {
@@ -122,8 +133,9 @@ export async function PATCH(
             previousStatus: product.status,
             newStatus: targetStatus,
             bypassedModeration: true,
-            note:
-              targetStatus === ProductStatus.PAUSED
+            note: shouldBump
+              ? "Tanda activada para hoy y subida al inicio del catálogo por el emprendedor."
+              : targetStatus === ProductStatus.PAUSED
                 ? "Marcado como agotado hoy por el emprendedor."
                 : "Marcado nuevamente como disponible por el emprendedor.",
           },
@@ -134,6 +146,7 @@ export async function PATCH(
         slug: product.slug,
         status: targetStatus,
         changed: true,
+        bumped: shouldBump,
       };
     });
 

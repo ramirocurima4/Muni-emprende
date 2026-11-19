@@ -2,26 +2,21 @@
 
 import { AuditEntityType } from "@prisma/client";
 import { db } from "@/lib/db";
+import type { FairTypeKey } from "@/lib/fairs";
 import { requireAdmin, toActionError } from "@/lib/server/admin-auth";
 import { revalidateAdminMutation } from "@/lib/server/admin-revalidate";
+import { removeStoredFairMedia } from "@/lib/server/image-upload";
 import {
-  processAndSaveExpoImage,
-  removeStoredImageVariantsByRelativePath,
-  removeUploadedProductImageVariants,
-  type SavedProductImageVariants,
-} from "@/lib/server/image-upload";
-import {
-  createExpoPhotoSchema,
-  expoPhotoIdSchema,
-  setExpoPhotoPublishedSchema,
+  fairAlbumIdSchema,
+  setFairAlbumPublishedSchema,
+  updateFairConfigSchema,
 } from "@/lib/validations/admin";
+import { normalizeWhatsappNumber } from "@/lib/whatsapp";
 
-export interface ExpoPhotoActionState {
+export interface FairConfigActionState {
   ok?: boolean;
   error?: string;
   fieldErrors?: Record<string, string[] | undefined>;
-  values?: { caption?: string; eventDate?: string };
-  /** Marca de tiempo del último guardado correcto (permite reiniciar el formulario). */
   savedAt?: number;
 }
 
@@ -31,31 +26,28 @@ export interface SimpleActionResult {
 }
 
 /**
- * Sube una foto de la Expo (WebP sin EXIF, thumb + full) con fecha y descripción corta.
- * Queda publicada en la portada pública de inmediato.
+ * Actualiza la cartelera pública (próxima fecha, horario, lugar, Google Maps y WhatsApp de inscripción)
+ * para Expo Emprendedores o Mercado Sanroqueño.
  */
-export async function createExpoPhotoAction(
-  _prevState: ExpoPhotoActionState,
+export async function updateFairConfigAction(
+  _prevState: FairConfigActionState,
   formData: FormData,
-): Promise<ExpoPhotoActionState> {
-  const values = {
-    caption: String(formData.get("caption") ?? ""),
-    eventDate: String(formData.get("eventDate") ?? ""),
+): Promise<FairConfigActionState> {
+  const raw = {
+    fairType: String(formData.get("fairType") ?? ""),
+    nextDate: String(formData.get("nextDate") ?? ""),
+    schedule: String(formData.get("schedule") ?? ""),
+    location: String(formData.get("location") ?? ""),
+    mapsUrl: String(formData.get("mapsUrl") ?? ""),
+    whatsappNumber: String(formData.get("whatsappNumber") ?? ""),
   };
 
-  const parsed = createExpoPhotoSchema.safeParse(values);
-  const rawImage = formData.get("image");
-  const hasImage = rawImage instanceof File && rawImage.size > 0;
-
-  if (!parsed.success || !hasImage) {
+  const parsed = updateFairConfigSchema.safeParse(raw);
+  if (!parsed.success) {
     return {
       ok: false,
-      error: "Revisá los campos marcados.",
-      fieldErrors: {
-        ...(parsed.success ? {} : parsed.error.flatten().fieldErrors),
-        image: hasImage ? undefined : ["Elegí una foto de la Expo."],
-      },
-      values,
+      error: "Revisá los campos marcados antes de guardar.",
+      fieldErrors: parsed.error.flatten().fieldErrors,
     };
   }
 
@@ -63,89 +55,148 @@ export async function createExpoPhotoAction(
   try {
     admin = await requireAdmin();
   } catch (err) {
-    return { ...toActionError(err, "No tenés permisos."), values };
+    return toActionError(err, "No tenés permisos.");
   }
 
-  let saved: SavedProductImageVariants;
-  try {
-    saved = await processAndSaveExpoImage(rawImage);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "No se pudo procesar la foto.";
-    return { ok: false, error: message, fieldErrors: { image: [message] }, values };
-  }
+  const normalizedWhatsapp = normalizeWhatsappNumber(parsed.data.whatsappNumber);
+  const nextDateValue = parsed.data.nextDate
+    ? new Date(`${parsed.data.nextDate}T00:00:00.000Z`)
+    : null;
+  const fairType = parsed.data.fairType as FairTypeKey;
 
   try {
     await db.$transaction(async (tx) => {
-      const photo = await tx.expoPhoto.create({
-        data: {
-          relativePath: saved.relativePath,
-          width: saved.width,
-          height: saved.height,
-          eventDate: new Date(`${parsed.data.eventDate}T00:00:00.000Z`),
-          caption: parsed.data.caption,
-          isPublished: true,
-          uploadedById: admin.userId,
+      const config = await tx.fairConfig.upsert({
+        where: { fairType },
+        update: {
+          nextDate: nextDateValue,
+          schedule: parsed.data.schedule,
+          location: parsed.data.location,
+          mapsUrl: parsed.data.mapsUrl,
+          whatsappNumber: normalizedWhatsapp,
+          updatedById: admin.userId,
         },
+        create: {
+          fairType,
+          nextDate: nextDateValue,
+          schedule: parsed.data.schedule,
+          location: parsed.data.location,
+          mapsUrl: parsed.data.mapsUrl,
+          whatsappNumber: normalizedWhatsapp,
+          updatedById: admin.userId,
+        },
+      });
+
+      await tx.systemConfig.upsert({
+        where: { key: "institutional" },
+        update:
+          fairType === "EXPO_EMPRENDEDORES"
+            ? {
+                employmentWhatsapp: normalizedWhatsapp,
+                expoNextDate: nextDateValue,
+                expoSchedule: parsed.data.schedule ?? "17:00 a 21:00 hs",
+                expoLocation: parsed.data.location ?? "Plaza Libertad",
+                expoMapsUrl: parsed.data.mapsUrl,
+                updatedById: admin.userId,
+              }
+            : {
+                productionWhatsapp: normalizedWhatsapp,
+                mercadoNextDate: nextDateValue,
+                mercadoSchedule: parsed.data.schedule ?? "08:00 a 13:00 hs",
+                mercadoLocation: parsed.data.location ?? "Plaza Libertad",
+                mercadoMapsUrl: parsed.data.mapsUrl,
+                updatedById: admin.userId,
+              },
+        create:
+          fairType === "EXPO_EMPRENDEDORES"
+            ? {
+                key: "institutional",
+                employmentWhatsapp: normalizedWhatsapp,
+                expoNextDate: nextDateValue,
+                expoSchedule: parsed.data.schedule ?? "17:00 a 21:00 hs",
+                expoLocation: parsed.data.location ?? "Plaza Libertad",
+                expoMapsUrl: parsed.data.mapsUrl,
+                updatedById: admin.userId,
+              }
+            : {
+                key: "institutional",
+                productionWhatsapp: normalizedWhatsapp,
+                mercadoNextDate: nextDateValue,
+                mercadoSchedule: parsed.data.schedule ?? "08:00 a 13:00 hs",
+                mercadoLocation: parsed.data.location ?? "Plaza Libertad",
+                mercadoMapsUrl: parsed.data.mapsUrl,
+                updatedById: admin.userId,
+              },
       });
 
       await tx.auditLog.create({
         data: {
           actorUserId: admin.userId,
-          entityType: AuditEntityType.EXPO_PHOTO,
-          entityId: photo.id,
-          action: "CREATE_EXPO_PHOTO",
+          entityType: AuditEntityType.FAIR_CONFIG,
+          entityId: config.id,
+          action: "UPDATE_FAIR_CONFIG",
           metadata: {
-            title: parsed.data.caption,
-            eventDate: parsed.data.eventDate,
-            imageRelativePath: saved.relativePath,
+            title:
+              fairType === "EXPO_EMPRENDEDORES"
+                ? "Expo Emprendedores"
+                : "Mercado Sanroqueño",
+            fairType,
+            nextDate: parsed.data.nextDate,
+            schedule: parsed.data.schedule,
+            location: parsed.data.location,
+            whatsappNumber: normalizedWhatsapp,
           },
         },
       });
     });
 
-    revalidateAdminMutation({ expos: true });
+    revalidateAdminMutation({ fairs: true, systemConfig: true });
     return { ok: true, savedAt: Date.now() };
-  } catch {
-    await removeUploadedProductImageVariants(saved);
+  } catch (err) {
+    console.error("[updateFairConfigAction] Error guardando cartelera:", err);
     return {
       ok: false,
-      error: "No pudimos guardar la foto. Intentá de nuevo en unos segundos.",
-      values,
+      error: "No pudimos guardar la cartelera. Intentá de nuevo en unos segundos.",
     };
   }
 }
 
-/** Muestra u oculta una foto en la portada sin borrarla. */
-export async function setExpoPhotoPublishedAction(input: {
+/** Muestra u oculta una crónica en la portada sin borrar sus archivos. */
+export async function setFairAlbumPublishedAction(input: {
   id: string;
   published: boolean;
 }): Promise<SimpleActionResult> {
-  const parsed = setExpoPhotoPublishedSchema.safeParse(input);
+  const parsed = setFairAlbumPublishedSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos.",
+    };
   }
 
   try {
     const admin = await requireAdmin();
     await db.$transaction(async (tx) => {
-      const photo = await tx.expoPhoto.findUnique({
+      const album = await tx.fairAlbum.findUnique({
         where: { id: parsed.data.id },
-        select: { id: true, caption: true },
+        select: { id: true, title: true, fairType: true },
       });
-      if (!photo) throw new Error("No encontramos esa foto.");
+      if (!album) throw new Error("No encontramos esa crónica.");
 
-      await tx.expoPhoto.update({
-        where: { id: photo.id },
+      await tx.fairAlbum.update({
+        where: { id: album.id },
         data: { isPublished: parsed.data.published },
       });
+
       await tx.auditLog.create({
         data: {
           actorUserId: admin.userId,
-          entityType: AuditEntityType.EXPO_PHOTO,
-          entityId: photo.id,
-          action: "SET_EXPO_PHOTO_PUBLISHED",
+          entityType: AuditEntityType.FAIR_ALBUM,
+          entityId: album.id,
+          action: "SET_FAIR_ALBUM_PUBLISHED",
           metadata: {
-            title: photo.caption,
+            title: album.title,
+            fairType: album.fairType,
             newStatus: parsed.data.published ? "VISIBLE" : "OCULTA",
           },
         },
@@ -155,45 +206,64 @@ export async function setExpoPhotoPublishedAction(input: {
     revalidateAdminMutation({ expos: true });
     return { ok: true };
   } catch (err) {
-    return toActionError(err, "No se pudo actualizar la foto.");
+    return toActionError(err, "No se pudo actualizar la crónica.");
   }
 }
 
-/** Elimina la foto y sus archivos del disco. */
-export async function deleteExpoPhotoAction(input: {
+/** Elimina la crónica completa y todos sus archivos multimedia (fotos WebP y videos) de Supabase Storage. */
+export async function deleteFairAlbumAction(input: {
   id: string;
 }): Promise<SimpleActionResult> {
-  const parsed = expoPhotoIdSchema.safeParse(input);
+  const parsed = fairAlbumIdSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Datos inválidos." };
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos.",
+    };
   }
 
   try {
     const admin = await requireAdmin();
-    const relativePath = await db.$transaction(async (tx) => {
-      const photo = await tx.expoPhoto.findUnique({
+    const mediaList = await db.$transaction(async (tx) => {
+      const album = await tx.fairAlbum.findUnique({
         where: { id: parsed.data.id },
-        select: { id: true, caption: true, relativePath: true },
+        select: {
+          id: true,
+          title: true,
+          fairType: true,
+          media: {
+            select: { relativePath: true, mediaType: true },
+          },
+        },
       });
-      if (!photo) throw new Error("No encontramos esa foto.");
+      if (!album) throw new Error("No encontramos esa crónica.");
 
-      await tx.expoPhoto.delete({ where: { id: photo.id } });
+      await tx.fairAlbum.delete({ where: { id: album.id } });
       await tx.auditLog.create({
         data: {
           actorUserId: admin.userId,
-          entityType: AuditEntityType.EXPO_PHOTO,
-          entityId: photo.id,
-          action: "DELETE_EXPO_PHOTO",
-          metadata: { title: photo.caption },
+          entityType: AuditEntityType.FAIR_ALBUM,
+          entityId: album.id,
+          action: "DELETE_FAIR_ALBUM",
+          metadata: {
+            title: album.title,
+            fairType: album.fairType,
+            mediaCount: album.media.length,
+          },
         },
       });
-      return photo.relativePath;
+      return album.media;
     });
 
-    await removeStoredImageVariantsByRelativePath(relativePath);
+    await Promise.allSettled(
+      mediaList.map((item) =>
+        removeStoredFairMedia(item.relativePath, item.mediaType),
+      ),
+    );
+
     revalidateAdminMutation({ expos: true });
     return { ok: true };
   } catch (err) {
-    return toActionError(err, "No se pudo eliminar la foto.");
+    return toActionError(err, "No se pudo eliminar la crónica.");
   }
 }

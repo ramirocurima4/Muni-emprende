@@ -103,7 +103,7 @@ export function CategoryVisualFilters({
               href={buildCategoryHref(cat.slug)}
               className="group flex min-w-[74px] shrink-0 flex-col items-center gap-2 text-center focus:outline-none"
             >
-              <span className="flex h-15 w-15 items-center justify-center rounded-full border border-brand-sky/25 bg-brand-sky-tint text-brand-ink shadow-xs transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-green/40 group-hover:bg-brand-green-soft group-hover:text-brand-green group-focus-visible:ring-2 group-focus-visible:ring-brand-green group-focus-visible:ring-offset-2 sm:h-16 sm:w-16">
+              <span className="flex h-15 w-15 items-center justify-center rounded-full border border-[#A8C6E3] bg-[#C5DCEF] text-brand-ink shadow-xs transition-all duration-200 group-hover:-translate-y-0.5 group-hover:border-brand-green/50 group-hover:bg-brand-green-soft group-hover:text-brand-green group-focus-visible:ring-2 group-focus-visible:ring-brand-green group-focus-visible:ring-offset-2 sm:h-16 sm:w-16">
                 <Icon className="h-6 w-6" strokeWidth={1.6} aria-hidden="true" />
               </span>
               <span className="text-xs font-semibold leading-tight text-brand-ink group-hover:text-brand-green">
@@ -126,14 +126,14 @@ export function CategoryVisualFilters({
         className={`group inline-flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 ${
           !activeCategorySlug
             ? "bg-brand-green text-white shadow-md shadow-brand-green/20"
-            : "border border-brand-sky/25 bg-brand-sky-bg text-brand-ink hover:bg-brand-sky-tint hover:text-brand-sky-dark"
+            : "border border-[#A8C6E3] bg-[#C5DCEF]/85 text-brand-ink hover:bg-[#B8D2EA] hover:text-brand-sky-dark"
         }`}
       >
         <span
           className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
             !activeCategorySlug
               ? "bg-brand-amber text-brand-ink"
-              : "bg-brand-sky-tint text-brand-ink group-hover:bg-brand-sky-light group-hover:text-brand-sky-dark"
+              : "bg-white/80 text-brand-ink group-hover:bg-white group-hover:text-brand-sky-dark"
           }`}
         >
           <LayoutGrid className="h-4 w-4" strokeWidth={1.7} aria-hidden="true" />
@@ -152,14 +152,14 @@ export function CategoryVisualFilters({
             className={`group inline-flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 ${
               isSelected
                 ? "bg-brand-green text-white shadow-md shadow-brand-green/20"
-                : "border border-brand-sky/25 bg-brand-sky-bg text-brand-ink hover:bg-brand-sky-tint hover:text-brand-sky-dark"
+                : "border border-[#A8C6E3] bg-[#C5DCEF]/85 text-brand-ink hover:bg-[#B8D2EA] hover:text-brand-sky-dark"
             }`}
           >
             <span
               className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                 isSelected
                   ? "bg-brand-amber text-brand-ink"
-                  : "bg-brand-sky-tint text-brand-ink group-hover:bg-brand-sky-light group-hover:text-brand-sky-dark"
+                  : "bg-white/80 text-brand-ink group-hover:bg-white group-hover:text-brand-sky-dark"
               }`}
             >
               <Icon className="h-4 w-4" strokeWidth={1.65} aria-hidden="true" />

@@ -63,9 +63,16 @@ export function ProductCard({ product, priority = false }: ProductCardProps) {
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-black/15 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
         <div className="absolute top-2.5 right-2.5 left-2.5 flex flex-wrap items-center justify-between gap-1.5">
-          <span className="inline-flex max-w-full truncate rounded-full bg-brand-sky-light/95 px-2.5 py-0.5 text-[11px] font-semibold text-brand-sky-dark shadow-md shadow-black/5 backdrop-blur-xs">
-            {product.category.name}
-          </span>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="inline-flex max-w-full truncate rounded-full bg-brand-sky-light/95 px-2.5 py-0.5 text-[11px] font-semibold text-brand-sky-dark shadow-md shadow-black/5 backdrop-blur-xs">
+              {product.category.name}
+            </span>
+            {product.isCombo ? (
+              <span className="inline-flex items-center rounded-full bg-brand-amber-soft/95 px-2 py-0.5 text-[10px] font-extrabold text-brand-amber-text shadow-md shadow-black/5 backdrop-blur-xs">
+                Variedades
+              </span>
+            ) : null}
+          </div>
 
           {product.expirationBadge === "TODAY" ? (
             <span className="inline-flex items-center gap-1 rounded-full bg-brand-amber px-2.5 py-0.5 text-[10px] font-bold text-brand-ink shadow-md shadow-black/5">

@@ -23,8 +23,8 @@ interface CatalogPageProps {
 export default function CatalogPage({ searchParams }: CatalogPageProps) {
   return (
     <div className="relative z-0 mx-auto w-full max-w-6xl space-y-8 px-4 pt-8 pb-12 sm:space-y-10 sm:px-8 sm:pt-12 sm:pb-16">
-      {/* Encabezado institucional del Catálogo Completo (Celeste claro) */}
-      <header className="rounded-[32px] border border-brand-sky/30 bg-gradient-to-br from-brand-sky-light/85 via-brand-surface to-brand-amber-soft/45 px-6 py-7 shadow-xl shadow-black/[0.04] sm:px-10 sm:py-9">
+      {/* Encabezado institucional del Catálogo Completo (Celeste institucional con jerarquía) */}
+      <header className="rounded-[32px] border border-[#A8C6E3] bg-gradient-to-br from-[#C5DCEF] via-[#D6E6F4] to-brand-amber-soft/55 px-6 py-7 shadow-xl shadow-[#1F4478]/[0.06] sm:px-10 sm:py-9">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2.5">
@@ -77,8 +77,8 @@ async function CatalogContent({
 
   return (
     <section className="space-y-7 sm:space-y-9">
-      {/* Barra de Búsqueda y Filtros Visuales por Rubro con espacio propio */}
-      <div className="space-y-5 rounded-[28px] border border-brand-sky/25 bg-brand-surface/85 p-4 shadow-lg shadow-black/[0.03] sm:p-5">
+      {/* Barra de Búsqueda y Filtros Visuales por Rubro con contraste celeste marcado */}
+      <div className="space-y-5 rounded-[28px] border border-[#A8C6E3] bg-[#D6E6F4] p-4 shadow-lg shadow-[#1F4478]/[0.05] sm:p-5">
         <form
           action="/catalogo"
           method="GET"
@@ -103,7 +103,7 @@ async function CatalogContent({
               name="q"
               defaultValue={activeQuery ?? ""}
               placeholder="Buscar dulce de mamón, tejidos, mates, huerta..."
-              className="w-full rounded-2xl border border-brand-sky/25 bg-brand-sky-bg py-3.5 pr-4 pl-11 text-sm text-brand-ink placeholder:text-brand-muted focus:border-brand-green focus:bg-brand-surface focus:outline-none focus:ring-2 focus:ring-brand-green/30"
+              className="w-full rounded-2xl border border-[#A8C6E3] bg-brand-surface py-3.5 pr-4 pl-11 text-sm text-brand-ink placeholder:text-brand-muted focus:border-brand-green focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-green/30"
             />
           </div>
 
@@ -115,7 +115,7 @@ async function CatalogContent({
           </button>
         </form>
 
-        <div className="border-t border-brand-sky/20 pt-4">
+        <div className="border-t border-[#A8C6E3]/80 pt-4">
           {/* Tira de filtros visuales con íconos vectoriales redondos (Lucide React) */}
           <CategoryVisualFilters
             categories={categories}

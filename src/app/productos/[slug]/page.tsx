@@ -128,6 +128,12 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
                 {product.category.name}
               </Link>
 
+              {product.isCombo ? (
+                <span className="inline-flex items-center rounded-full bg-brand-amber-soft px-3 py-1 text-xs font-extrabold text-brand-amber-text">
+                  Variedades
+                </span>
+              ) : null}
+
               {product.expirationBadge === "TODAY" ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-amber px-3 py-1 text-xs font-bold text-brand-ink">
                   <span className="h-1.5 w-1.5 rounded-full bg-brand-ink" />
@@ -148,12 +154,30 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
               {product.description}
             </p>
 
+            {product.ingredients ? (
+              <div className="mt-4 rounded-2xl border border-brand-sky/30 bg-brand-sky-tint/70 p-4">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-brand-green">
+                  {product.isCombo
+                    ? "Variedades / Qué incluye"
+                    : "Ingredientes"}
+                </p>
+                <p className="mt-1 whitespace-pre-line text-sm text-brand-ink">
+                  {product.ingredients}
+                </p>
+              </div>
+            ) : null}
+
             <div className="mt-6 rounded-2xl border border-brand-border bg-brand-cream p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-brand-amber-text">
                 Elaborado / ofrecido por
               </p>
               <p className="mt-1 text-sm font-bold text-brand-ink">
-                {product.entrepreneur.businessName}
+                <Link
+                  href={`/?emprendedor=${encodeURIComponent(product.entrepreneur.slug)}`}
+                  className="hover:text-brand-green hover:underline"
+                >
+                  {product.entrepreneur.businessName}
+                </Link>
               </p>
               <p className="text-xs font-medium text-brand-muted">
                 {product.entrepreneur.ownerName}
@@ -161,6 +185,29 @@ async function ProductDetailContent({ params }: ProductDetailPageProps) {
                   ? ` · ${product.entrepreneur.neighborhood}`
                   : ""}
               </p>
+
+              {product.entrepreneur.hasPickup ||
+              product.entrepreneur.hasDelivery ||
+              product.entrepreneur.atFair ? (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {product.entrepreneur.hasPickup ? (
+                    <span className="rounded-full border border-[#B8D2EA] bg-[#EDF4FC] px-2.5 py-0.5 text-[11px] font-bold text-brand-sky-dark">
+                      Retiro en mi barrio
+                    </span>
+                  ) : null}
+                  {product.entrepreneur.hasDelivery ? (
+                    <span className="rounded-full border border-brand-green/30 bg-brand-green-soft px-2.5 py-0.5 text-[11px] font-bold text-brand-green-dark">
+                      Envíos en San Roque
+                    </span>
+                  ) : null}
+                  {product.entrepreneur.atFair ? (
+                    <span className="rounded-full border border-brand-amber/45 bg-brand-amber-soft px-2.5 py-0.5 text-[11px] font-bold text-brand-amber-text">
+                      Participa en la Feria
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+
               {product.entrepreneur.bio ? (
                 <p className="mt-2 text-xs leading-relaxed text-brand-muted">
                   {product.entrepreneur.bio}

@@ -72,7 +72,7 @@ async function AdminHomeContent() {
             </Link>
             <Link href="/admin/galeria" className={BTN_SECONDARY}>
               <Camera className="h-4 w-4" aria-hidden="true" />
-              <span>Subir foto de Expo</span>
+              <span>Cartelera y Galería</span>
             </Link>
           </>
         }
@@ -113,7 +113,7 @@ async function AdminHomeContent() {
           label="Productos publicados"
           value={overview.productsPublished}
           tone="sky"
-          hint={`${overview.expoPhotosPublished} fotos en la Galería de Expos`}
+          hint={`${overview.fairAlbumsPublished} crónicas en Galería de Ferias`}
           href="/admin/metricas"
         />
       </div>

@@ -1,14 +1,18 @@
 "use client";
 
 import type { ProductStatus } from "@prisma/client";
-import { Loader2, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpCircle, CheckCircle2, Layers, Loader2, Pencil, Trash2 } from "lucide-react";
 import { useOptimistic, useState, useTransition } from "react";
 import type { PanelProductItem } from "@/lib/server/entrepreneur-panel";
 
 interface ProductControlCardProps {
   product: PanelProductItem;
   onEdit: (product: PanelProductItem) => void;
-  onStatusChanged: (productId: string, nextStatus: ProductStatus) => void;
+  onStatusChanged: (
+    productId: string,
+    nextStatus: ProductStatus,
+    bumped?: boolean,
+  ) => void;
   onDeleted: (productId: string) => void;
 }
 
@@ -19,6 +23,8 @@ export function ProductControlCard({
   onDeleted,
 }: ProductControlCardProps) {
   const [isToggling, startToggleTransition] = useTransition();
+  const [isBumping, setIsBumping] = useState(false);
+  const [justBumped, setJustBumped] = useState(false);
   const [toggleError, setToggleError] = useState<string | null>(null);
 
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -91,7 +97,7 @@ export function ProductControlCard({
             data.error ?? "No pudimos cambiar si está disponible.",
           );
         }
-        onStatusChanged(product.id, data.status);
+        onStatusChanged(product.id, data.status, false);
       } catch (err) {
         setToggleError(
           err instanceof Error
@@ -100,6 +106,40 @@ export function ProductControlCard({
         );
       }
     });
+  }
+
+  async function handleBumpToday() {
+    if (!isToggleable || isBumping || isToggling) return;
+    setToggleError(null);
+    setJustBumped(false);
+    setIsBumping(true);
+
+    try {
+      const response = await fetch(
+        `/api/mi-emprendimiento/productos/${product.id}/disponibilidad`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ available: true, bump: true }),
+        },
+      );
+      const data = await response.json();
+      if (!response.ok || !data.ok) {
+        throw new Error(
+          data.error ?? "No pudimos activar el producto para hoy.",
+        );
+      }
+      setJustBumped(true);
+      onStatusChanged(product.id, data.status, true);
+    } catch (err) {
+      setToggleError(
+        err instanceof Error
+          ? err.message
+          : "No pudimos activar el producto para hoy. Probá de nuevo.",
+      );
+    } finally {
+      setIsBumping(false);
+    }
   }
 
   async function handleConfirmDelete() {
@@ -172,6 +212,13 @@ export function ProductControlCard({
             <span className="rounded-full bg-[#E8F1F8] px-2.5 py-1 text-[11px] font-bold text-brand-sky-dark">
               {product.category.name}
             </span>
+
+            {product.isCombo ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#FEF3DC] px-2.5 py-1 text-[11px] font-bold text-[#8A4F00]">
+                <Layers className="h-3 w-3" aria-hidden="true" />
+                Variedades
+              </span>
+            ) : null}
           </div>
 
           <h3 className="mt-2 line-clamp-2 text-base font-extrabold leading-snug text-brand-ink sm:text-lg">
@@ -180,7 +227,10 @@ export function ProductControlCard({
 
           {product.ingredients ? (
             <p className="mt-1 line-clamp-1 text-xs text-brand-muted">
-              <strong>Ingredientes:</strong> {product.ingredients}
+              <strong>
+                {product.isCombo ? "Variedades:" : "Ingredientes:"}
+              </strong>{" "}
+              {product.ingredients}
             </p>
           ) : null}
         </div>
@@ -258,6 +308,40 @@ export function ProductControlCard({
           {toggleError ? (
             <p role="alert" className="mt-1.5 text-xs font-bold text-[#9B2226]">
               {toggleError}
+            </p>
+          ) : null}
+
+          {/* Botón rápido: Activar para hoy / Subir arriba */}
+          <button
+            type="button"
+            disabled={isBumping || isToggling}
+            onClick={handleBumpToday}
+            className="mt-2.5 flex min-h-[46px] w-full items-center justify-center gap-2 rounded-2xl border border-brand-green/40 bg-brand-green-soft/75 px-4 py-2.5 text-sm font-extrabold text-brand-green-dark transition-colors hover:bg-brand-green hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green disabled:opacity-60"
+          >
+            {isBumping ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                <span>Activando para hoy...</span>
+              </>
+            ) : (
+              <>
+                <ArrowUpCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <span>
+                  {optimisticAvailable
+                    ? "Activar para hoy · Subir arriba"
+                    : "Reactivar tanda de hoy · Subir arriba"}
+                </span>
+              </>
+            )}
+          </button>
+
+          {justBumped ? (
+            <p
+              role="status"
+              className="mt-1.5 flex items-center justify-center gap-1.5 text-xs font-bold text-brand-green-dark"
+            >
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              <span>¡Activado para hoy! Ya aparece primero en el catálogo.</span>
             </p>
           ) : null}
         </div>

@@ -6,6 +6,7 @@ export const MAX_PRODUCT_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB
 export const toggleProductAvailabilitySchema = z.object({
   productId: z.string().uuid("Identificador de producto inválido."),
   available: z.boolean(),
+  bump: z.boolean().optional(),
 });
 
 export type ToggleProductAvailabilityInput = z.infer<
@@ -27,10 +28,11 @@ export const createProductSchema = z.object({
     .string()
     .trim()
     .uuid("Elegí un rubro de la lista."),
+  isCombo: z.boolean().optional().default(false),
   ingredients: z
     .string()
     .trim()
-    .max(1000, "Los ingredientes no pueden superar las 1000 letras.")
+    .max(1000, "Las variedades o ingredientes no pueden superar las 1000 letras.")
     .optional()
     .transform((val) => (val && val.length > 0 ? val : null)),
 });
@@ -70,6 +72,9 @@ export const updateEntrepreneurProfileSchema = z.object({
     .max(600, "La descripción breve no puede superar las 600 letras.")
     .optional()
     .transform((val) => (val && val.length > 0 ? val : null)),
+  hasPickup: z.boolean().optional().default(true),
+  hasDelivery: z.boolean().optional().default(false),
+  atFair: z.boolean().optional().default(false),
 });
 
 export type UpdateEntrepreneurProfileInput = z.infer<

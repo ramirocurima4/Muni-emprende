@@ -60,8 +60,13 @@ export async function registerEntrepreneurAction(
 
   const data = parsed.data;
 
-  const existingUser = await db.user.findUnique({
-    where: { username: data.username },
+  const existingUser = await db.user.findFirst({
+    where: {
+      username: {
+        equals: data.username,
+        mode: "insensitive",
+      },
+    },
     select: { id: true },
   });
 

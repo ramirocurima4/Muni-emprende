@@ -50,8 +50,25 @@ enum AuditEntityType {
   PRODUCT
   CATEGORY
   EXPO_PHOTO
+  FAIR_CONFIG
+  FAIR_ALBUM
+  SYSTEM_CONFIG
 
   @@map("audit_entity_type")
+}
+
+enum FairType {
+  EXPO_EMPRENDEDORES
+  MERCADO_SANROQUENO
+
+  @@map("fair_type")
+}
+
+enum FairMediaType {
+  IMAGE
+  VIDEO
+
+  @@map("fair_media_type")
 }
 
 // ============================================================================
@@ -73,7 +90,9 @@ model User {
   approvedEntrepreneurs Entrepreneur[] @relation("EntrepreneurApprovedBy")
   approvedProducts      Product[]      @relation("ProductApprovedBy")
   auditLogs             AuditLog[]
-  expoPhotos            ExpoPhoto[]
+  updatedFairConfigs    FairConfig[]   @relation("FairConfigUpdatedBy")
+  uploadedFairAlbums    FairAlbum[]    @relation("FairAlbumUploadedBy")
+  updatedSystemConfigs  SystemConfig[] @relation("SystemConfigUpdatedBy")
 
   @@index([role, isActive])
   @@map("users")
@@ -89,6 +108,9 @@ model Entrepreneur {
   neighborhood    String?            @db.VarChar(120)
   bio             String?            @db.Text
   avatarPath      String?            @map("avatar_path") @db.VarChar(255)
+  hasPickup       Boolean            @default(true) @map("has_pickup")
+  hasDelivery     Boolean            @default(false) @map("has_delivery")
+  atFair          Boolean            @default(false) @map("at_fair")
   isTrusted       Boolean            @default(false) @map("is_trusted")
   status          EntrepreneurStatus @default(PENDING)
   rejectionReason String?            @map("rejection_reason") @db.Text
@@ -133,6 +155,7 @@ model Product {
   slug            String        @unique @db.VarChar(200)
   description     String        @db.Text
   ingredients     String?       @db.Text
+  isCombo         Boolean       @default(false) @map("is_combo")
   status          ProductStatus @default(PENDING)
   rejectionReason String?       @map("rejection_reason") @db.Text
   expiresAt       DateTime?     @map("expires_at")
@@ -147,6 +170,7 @@ model Product {
   approver     User?          @relation("ProductApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   images       ProductImage[]
 
+  @@index([status, updatedAt(sort: Desc)])
   @@index([status, createdAt(sort: Desc)])
   @@index([status, expiresAt])
   @@index([entrepreneurId, status])
@@ -174,24 +198,87 @@ model ProductImage {
   @@map("product_images")
 }
 
-model ExpoPhoto {
-  id           String   @id @default(uuid()) @db.Uuid
-  relativePath String   @map("relative_path") @db.VarChar(255)
-  width        Int
-  height       Int
-  eventDate    DateTime @map("event_date") @db.Date
-  caption      String   @db.VarChar(200)
-  isPublished  Boolean  @default(true) @map("is_published")
-  uploadedById String?  @map("uploaded_by") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model SystemConfig {
+  id                 String    @id @default(uuid()) @db.Uuid
+  key                String    @unique @default("institutional") @db.VarChar(40)
+  employmentWhatsapp String    @default("5493794819378") @map("employment_whatsapp") @db.VarChar(25)
+  productionWhatsapp String    @default("5493794819378") @map("production_whatsapp") @db.VarChar(25)
+  expoNextDate       DateTime? @map("expo_next_date") @db.Date
+  expoSchedule       String    @default("17:00 a 21:00 hs") @map("expo_schedule") @db.VarChar(80)
+  expoLocation       String    @default("Plaza Libertad") @map("expo_location") @db.VarChar(150)
+  expoMapsUrl        String?   @map("expo_maps_url") @db.VarChar(500)
+  mercadoNextDate    DateTime? @map("mercado_next_date") @db.Date
+  mercadoSchedule    String    @default("08:00 a 13:00 hs") @map("mercado_schedule") @db.VarChar(80)
+  mercadoLocation    String    @default("Plaza Libertad") @map("mercado_location") @db.VarChar(150)
+  mercadoMapsUrl     String?   @map("mercado_maps_url") @db.VarChar(500)
+  authorityName      String    @default("Cr. Raúl Pelozo") @map("authority_name") @db.VarChar(120)
+  authorityTitle     String    @default("Intendente de San Roque") @map("authority_title") @db.VarChar(120)
+  legalDisclaimer    String    @default("La Municipalidad de San Roque brinda únicamente este espacio de difusión publicitaria y no interviene en precios, medios de pago, entregas ni garantías comerciales.") @map("legal_disclaimer") @db.Text
+  updatedById        String?   @map("updated_by") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   // Relaciones
-  uploadedBy User? @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  updatedBy User? @relation("SystemConfigUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
+  @@map("system_configs")
+}
+
+model FairConfig {
+  id             String    @id @default(uuid()) @db.Uuid
+  fairType       FairType  @unique @map("fair_type")
+  nextDate       DateTime? @map("next_date") @db.Date
+  schedule       String?   @db.VarChar(80)
+  location       String?   @db.VarChar(150)
+  mapsUrl        String?   @map("maps_url") @db.VarChar(500)
+  whatsappNumber String    @map("whatsapp_number") @db.VarChar(25)
+  updatedById    String?   @map("updated_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  updatedBy User? @relation("FairConfigUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@map("fair_configs")
+}
+
+model FairAlbum {
+  id           String    @id @default(uuid()) @db.Uuid
+  fairType     FairType  @map("fair_type")
+  title        String    @db.VarChar(140)
+  eventDate    DateTime  @map("event_date") @db.Date
+  location     String    @db.VarChar(120)
+  description  String?   @db.VarChar(320)
+  isPublished  Boolean   @default(true) @map("is_published")
+  uploadedById String?   @map("uploaded_by") @db.Uuid
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // Relaciones
+  uploadedBy User?       @relation("FairAlbumUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  media      FairMedia[]
+
+  @@index([fairType, isPublished, eventDate(sort: Desc)])
   @@index([isPublished, eventDate(sort: Desc)])
   @@index([uploadedById])
-  @@map("expo_photos")
+  @@map("fair_albums")
+}
+
+model FairMedia {
+  id           String        @id @default(uuid()) @db.Uuid
+  albumId      String        @map("album_id") @db.Uuid
+  mediaType    FairMediaType @default(IMAGE) @map("media_type")
+  relativePath String        @map("relative_path") @db.VarChar(500)
+  width        Int?
+  height       Int?
+  sortOrder    Int           @default(0) @map("sort_order")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  // Relaciones
+  album FairAlbum @relation(fields: [albumId], references: [id], onDelete: Cascade)
+
+  @@index([albumId, sortOrder])
+  @@map("fair_media")
 }
 
 model AuditLog {

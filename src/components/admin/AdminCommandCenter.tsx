@@ -71,7 +71,15 @@ export interface AuditLogRow {
   actorEmail: string;
   actorRole: string;
   action: string;
-  entityType: "USER" | "ENTREPRENEUR" | "PRODUCT" | "CATEGORY" | "EXPO_PHOTO";
+  entityType:
+    | "USER"
+    | "ENTREPRENEUR"
+    | "PRODUCT"
+    | "CATEGORY"
+    | "EXPO_PHOTO"
+    | "FAIR_CONFIG"
+    | "FAIR_ALBUM"
+    | "SYSTEM_CONFIG";
   entityId: string;
   targetName: string;
   previousStatus: string | null;

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { HeaderAuthNav } from "@/components/layout/HeaderAuthNav";
+import { HeaderSectionLinks } from "@/components/layout/HeaderSectionLinks";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -60,10 +61,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es-AR"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col bg-[#E8F1F8] text-brand-ink">
-        <header className="sticky top-0 z-50 border-b border-brand-sky/30 bg-[#E8F1F8] shadow-xs shadow-brand-sky/10">
+        <header className="sticky top-0 z-50 border-b border-[#A8C6E3] bg-[#D6E6F4]/95 shadow-sm shadow-[#1F4478]/[0.06] backdrop-blur-md">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-2.5 px-3.5 py-2.5 sm:gap-4 sm:px-8 sm:py-3">
             <Link
               href="/"
@@ -83,10 +84,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               />
               <div className="min-w-0 leading-tight">
                 <span className="block truncate text-[10px] font-bold uppercase tracking-[0.12em] text-brand-sky-dark sm:hidden">
-                  San Roque
+                  Dir. de Empleo · San Roque
                 </span>
                 <span className="hidden truncate text-[11px] font-bold uppercase tracking-[0.14em] text-brand-sky-dark sm:block">
-                  Dir. de Empleo y Emprendedores
+                  Dirección de Empleo · Municipalidad de San Roque
                 </span>
                 <span className="block truncate text-sm font-extrabold tracking-tight text-brand-green-dark transition-colors group-hover:text-brand-green sm:text-lg">
                   MuniEmprende
@@ -94,14 +95,24 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
               </div>
             </Link>
 
-            <Suspense
-              fallback={
-                <div className="h-9 w-28 animate-pulse rounded-xl bg-brand-sky/25" />
-              }
-            >
-              <HeaderAuthNav />
-            </Suspense>
+            <div className="flex items-center gap-2 lg:gap-3">
+              <Suspense fallback={null}>
+                <HeaderSectionLinks variant="desktop" />
+              </Suspense>
+
+              <Suspense
+                fallback={
+                  <div className="h-9 w-28 animate-pulse rounded-xl bg-brand-sky/25" />
+                }
+              >
+                <HeaderAuthNav />
+              </Suspense>
+            </div>
           </div>
+
+          <Suspense fallback={null}>
+            <HeaderSectionLinks variant="mobile" />
+          </Suspense>
         </header>
 
         <main className="flex-1">{children}</main>

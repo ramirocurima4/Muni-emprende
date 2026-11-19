@@ -3,8 +3,8 @@
 import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import {
-  deleteExpoPhotoAction,
-  setExpoPhotoPublishedAction,
+  deleteFairAlbumAction,
+  setFairAlbumPublishedAction,
 } from "@/app/actions/admin-gallery";
 import { ConfirmActionButton } from "./ConfirmActionButton";
 import { BTN_DANGER, BTN_SECONDARY } from "./ui";
@@ -13,13 +13,13 @@ const COMPACT = "!min-h-[36px] !px-3 !py-1.5 !text-xs";
 
 interface ExpoPhotoActionsProps {
   id: string;
-  caption: string;
+  title: string;
   isPublished: boolean;
 }
 
 export function ExpoPhotoActions({
   id,
-  caption,
+  title,
   isPublished,
 }: ExpoPhotoActionsProps) {
   const [isToggling, startToggleTransition] = useTransition();
@@ -28,7 +28,7 @@ export function ExpoPhotoActions({
   function handleTogglePublish() {
     setError(null);
     startToggleTransition(async () => {
-      const result = await setExpoPhotoPublishedAction({
+      const result = await setFairAlbumPublishedAction({
         id,
         published: !isPublished,
       });
@@ -59,18 +59,18 @@ export function ExpoPhotoActions({
 
         <ConfirmActionButton
           triggerClassName={`${BTN_DANGER} ${COMPACT}`}
-          triggerLabel={`Eliminar foto ${caption}`}
+          triggerLabel={`Eliminar crónica ${title}`}
           trigger={
             <>
               <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Eliminar</span>
             </>
           }
-          title="Eliminar foto de la Expo"
-          description={`¿Seguro querés borrar "${caption}"? Se quita de la portada y del archivo del servidor.`}
-          confirmLabel="Sí, eliminar foto"
+          title="Eliminar crónica de feria"
+          description={`¿Seguro querés borrar "${title}"? Se quita de la portada y se eliminan sus fotos y video del almacenamiento.`}
+          confirmLabel="Sí, eliminar crónica"
           confirmClassName="inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl bg-[#B91C1C] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#991B1B] disabled:opacity-60"
-          onConfirm={() => deleteExpoPhotoAction({ id })}
+          onConfirm={() => deleteFairAlbumAction({ id })}
         />
       </div>
 

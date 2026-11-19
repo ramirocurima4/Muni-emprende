@@ -22,6 +22,7 @@ export interface PanelProductItem {
   slug: string;
   description: string;
   ingredients: string | null;
+  isCombo: boolean;
   status: ProductStatus;
   rejectionReason: string | null;
   category: {
@@ -37,6 +38,7 @@ export interface PanelProductItem {
     height: number;
   } | null;
   createdAtIso: string;
+  updatedAtIso: string;
 }
 
 export interface PanelEntrepreneurProfile {
@@ -48,6 +50,9 @@ export interface PanelEntrepreneurProfile {
   neighborhood: string;
   bio: string;
   avatarUrl: string | null;
+  hasPickup: boolean;
+  hasDelivery: boolean;
+  atFair: boolean;
   status: EntrepreneurStatus;
   rejectionReason: string | null;
   isTrusted: boolean;
@@ -68,6 +73,9 @@ export interface AuthenticatedEntrepreneurContext {
     neighborhood: string | null;
     bio: string | null;
     avatarPath: string | null;
+    hasPickup: boolean;
+    hasDelivery: boolean;
+    atFair: boolean;
     isTrusted: boolean;
     status: EntrepreneurStatus;
     rejectionReason: string | null;
@@ -120,6 +128,9 @@ export async function requireAuthenticatedEntrepreneur(): Promise<AuthenticatedE
       neighborhood: true,
       bio: true,
       avatarPath: true,
+      hasPickup: true,
+      hasDelivery: true,
+      atFair: true,
       isTrusted: true,
       status: true,
       rejectionReason: true,
@@ -182,9 +193,11 @@ export function mapPanelProductItem(product: {
   slug: string;
   description: string;
   ingredients: string | null;
+  isCombo: boolean;
   status: ProductStatus;
   rejectionReason: string | null;
   createdAt: Date;
+  updatedAt?: Date;
   category: {
     id: string;
     name: string;
@@ -204,6 +217,7 @@ export function mapPanelProductItem(product: {
     slug: product.slug,
     description: product.description,
     ingredients: product.ingredients,
+    isCombo: product.isCombo,
     status: product.status,
     rejectionReason: product.rejectionReason,
     category: product.category,
@@ -217,6 +231,7 @@ export function mapPanelProductItem(product: {
         }
       : null,
     createdAtIso: product.createdAt.toISOString(),
+    updatedAtIso: (product.updatedAt ?? product.createdAt).toISOString(),
   };
 }
 
@@ -236,6 +251,9 @@ export function mapPanelEntrepreneurProfile(
     avatarUrl: entrepreneur.avatarPath
       ? getUploadImageUrl(entrepreneur.avatarPath, "thumb")
       : null,
+    hasPickup: entrepreneur.hasPickup,
+    hasDelivery: entrepreneur.hasDelivery,
+    atFair: entrepreneur.atFair,
     status: entrepreneur.status,
     rejectionReason: entrepreneur.rejectionReason,
     isTrusted,
@@ -254,16 +272,18 @@ export async function loadEntrepreneurPanelCollections(entrepreneurId: string): 
   const [products, categories] = await Promise.all([
     db.product.findMany({
       where: { entrepreneurId },
-      orderBy: [{ createdAt: "desc" }],
+      orderBy: [{ updatedAt: "desc" }, { createdAt: "desc" }],
       select: {
         id: true,
         title: true,
         slug: true,
         description: true,
         ingredients: true,
+        isCombo: true,
         status: true,
         rejectionReason: true,
         createdAt: true,
+        updatedAt: true,
         category: {
           select: {
             id: true,
@@ -339,6 +359,7 @@ export function revalidateEntrepreneurAndCatalogSurfaces(
   revalidateTag("public-catalog", { expire: 0 });
   revalidateTag("public-products", { expire: 0 });
   revalidateTag("public-categories", { expire: 0 });
+  revalidateTag("public-entrepreneurs", { expire: 0 });
   if (productSlug) {
     revalidateTag(`product-${productSlug}`, { expire: 0 });
     revalidatePath(`/productos/${productSlug}`);

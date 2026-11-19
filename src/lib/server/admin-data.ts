@@ -112,7 +112,7 @@ export interface AdminOverview {
   productsPublished: number;
   productsPending: number;
   productsCorrections: number;
-  expoPhotosPublished: number;
+  fairAlbumsPublished: number;
   oldestPendingProductAt: Date | null;
   emptyCategories: CategoryOfferRow[];
 }
@@ -128,7 +128,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     productsPublished,
     productsPending,
     productsCorrections,
-    expoPhotosPublished,
+    fairAlbumsPublished,
     oldestPending,
     categories,
   ] = await Promise.all([
@@ -139,7 +139,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     db.product.count({ where: publishedProductWhere(now) }),
     db.product.count({ where: { status: ProductStatus.PENDING } }),
     db.product.count({ where: { status: ProductStatus.REJECTED } }),
-    db.expoPhoto.count({ where: { isPublished: true } }),
+    db.fairAlbum.count({ where: { isPublished: true } }),
     db.product.findFirst({
       where: { status: ProductStatus.PENDING },
       orderBy: { createdAt: "asc" },
@@ -156,7 +156,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
     productsPublished,
     productsPending,
     productsCorrections,
-    expoPhotosPublished,
+    fairAlbumsPublished,
     oldestPendingProductAt: oldestPending?.createdAt ?? null,
     emptyCategories: categories.filter((c) => c.publishedProducts === 0),
   };
@@ -422,22 +422,50 @@ export async function getStaffUsers() {
 }
 
 // ============================================================================
-// Galería de Expos
+// Cartelera de Ferias y Galería Multimedia
 // ============================================================================
 
-export async function getExpoPhotosForAdmin() {
-  return db.expoPhoto.findMany({
+export async function getFairConfigsForAdmin() {
+  return db.fairConfig.findMany({
+    orderBy: [{ fairType: "asc" }],
+    select: {
+      id: true,
+      fairType: true,
+      nextDate: true,
+      schedule: true,
+      location: true,
+      mapsUrl: true,
+      whatsappNumber: true,
+      updatedAt: true,
+      updatedBy: { select: { username: true } },
+    },
+  });
+}
+
+export async function getFairAlbumsForAdmin() {
+  return db.fairAlbum.findMany({
     orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
     select: {
       id: true,
-      relativePath: true,
-      width: true,
-      height: true,
+      fairType: true,
+      title: true,
       eventDate: true,
-      caption: true,
+      location: true,
+      description: true,
       isPublished: true,
       createdAt: true,
       uploadedBy: { select: { username: true } },
+      media: {
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          mediaType: true,
+          relativePath: true,
+          width: true,
+          height: true,
+          sortOrder: true,
+        },
+      },
     },
   });
 }

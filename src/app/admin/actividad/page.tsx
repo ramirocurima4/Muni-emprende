@@ -102,7 +102,10 @@ async function ActivityContent({ searchParams }: ActivityPageProps) {
               <option value="PRODUCT">Productos</option>
               <option value="ENTREPRENEUR">Emprendimientos</option>
               <option value="USER">Usuarios</option>
-              <option value="EXPO_PHOTO">Fotos de Expo</option>
+              <option value="FAIR_ALBUM">Crónicas de Ferias</option>
+              <option value="SYSTEM_CONFIG">Configuración Institucional</option>
+              <option value="FAIR_CONFIG">Cartelera de Ferias</option>
+              <option value="EXPO_PHOTO">Fotos de Expo (legado)</option>
               <option value="CATEGORY">Rubros</option>
             </select>
           </div>

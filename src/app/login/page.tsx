@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { getPublicSystemConfig } from "@/lib/system-config";
 
 export const metadata: Metadata = {
   title: "Ingresar",
@@ -8,7 +9,9 @@ export const metadata: Metadata = {
     "Acceso para emprendedores locales y equipo de moderación de la Municipalidad de San Roque.",
 };
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const systemConfig = await getPublicSystemConfig();
+
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 py-8 sm:px-6 sm:py-12">
       <div className="mb-6 text-center">
@@ -24,7 +27,7 @@ export default function LoginPage() {
         </p>
       </div>
 
-      <LoginForm />
+      <LoginForm employmentWhatsapp={systemConfig.employmentWhatsapp} />
 
       <div className="mt-6 text-center">
         <Link

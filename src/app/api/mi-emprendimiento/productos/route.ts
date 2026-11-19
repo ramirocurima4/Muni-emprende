@@ -78,6 +78,7 @@ export async function POST(request: Request) {
     title: String(formData.get("title") ?? ""),
     description: String(formData.get("description") ?? ""),
     categoryId: String(formData.get("categoryId") ?? ""),
+    isCombo: String(formData.get("isCombo") ?? "") === "true",
     ingredients: String(formData.get("ingredients") ?? ""),
   };
 
@@ -108,17 +109,26 @@ export async function POST(request: Request) {
     );
   }
 
-  const category = await db.category.findFirst({
-    where: {
-      id: parsed.data.categoryId,
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-    },
-  });
+  let category: { id: string; name: string; slug: string } | null;
+  try {
+    category = await db.category.findFirst({
+      where: {
+        id: parsed.data.categoryId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+  } catch (err) {
+    console.error("[POST /api/mi-emprendimiento/productos] Error consultando rubro:", err);
+    return NextResponse.json(
+      { ok: false, error: "No pudimos verificar el rubro elegido." },
+      { status: 500 },
+    );
+  }
 
   if (!category) {
     return NextResponse.json(
@@ -151,17 +161,20 @@ export async function POST(request: Request) {
     );
   }
 
-  const slug = await generateUniqueProductSlug(parsed.data.title);
-  const cleanIngredients = isGastronomyCategory(category)
-    ? parsed.data.ingredients
-    : null;
+  const isCombo = Boolean(parsed.data.isCombo);
+  const cleanIngredients =
+    isCombo || isGastronomyCategory(category)
+      ? parsed.data.ingredients
+      : null;
   const now = new Date();
   const initialStatus = isTrusted
     ? ProductStatus.APPROVED
     : ProductStatus.PENDING;
 
+  let createdProduct;
   try {
-    const createdProduct = await db.$transaction(async (tx) => {
+    const slug = await generateUniqueProductSlug(parsed.data.title);
+    createdProduct = await db.$transaction(async (tx) => {
       const product = await tx.product.create({
         data: {
           entrepreneurId: entrepreneur.id,
@@ -170,6 +183,7 @@ export async function POST(request: Request) {
           slug,
           description: parsed.data.description,
           ingredients: cleanIngredients,
+          isCombo,
           status: initialStatus,
           approvedAt: isTrusted ? now : null,
         },
@@ -179,9 +193,11 @@ export async function POST(request: Request) {
           slug: true,
           description: true,
           ingredients: true,
+          isCombo: true,
           status: true,
           rejectionReason: true,
           createdAt: true,
+          updatedAt: true,
           category: {
             select: {
               id: true,
@@ -238,18 +254,8 @@ export async function POST(request: Request) {
         images: [imageRecord],
       };
     });
-
-    revalidateEntrepreneurAndCatalogSurfaces(createdProduct.slug);
-
-    return NextResponse.json(
-      {
-        ok: true,
-        publishedDirectly: isTrusted,
-        product: mapPanelProductItem(createdProduct),
-      },
-      { status: 201 },
-    );
-  } catch {
+  } catch (err) {
+    console.error("[POST /api/mi-emprendimiento/productos] Error guardando producto:", err);
     await removeUploadedProductImageVariants(savedImage);
     return NextResponse.json(
       {
@@ -260,4 +266,19 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+
+  try {
+    revalidateEntrepreneurAndCatalogSurfaces(createdProduct.slug);
+  } catch (err) {
+    console.warn("[POST /api/mi-emprendimiento/productos] Error al revalidar caché:", err);
+  }
+
+  return NextResponse.json(
+    {
+      ok: true,
+      publishedDirectly: isTrusted,
+      product: mapPanelProductItem(createdProduct),
+    },
+    { status: 201 },
+  );
 }

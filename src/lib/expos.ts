@@ -1,45 +1,85 @@
 import { cacheLife, cacheTag } from "next/cache";
 import { db } from "./db";
+import type { FairTypeKey } from "./fairs";
+import { getPublicSystemConfig } from "./system-config";
 
-export interface PublicExpoPhoto {
+export interface PublicFairConfig {
+  fairType: FairTypeKey;
+  /** Próxima fecha en formato `YYYY-MM-DD`, o `null` si todavía está a confirmar. */
+  nextDate: string | null;
+  schedule: string;
+  location: string;
+  mapsUrl: string | null;
+  whatsappNumber: string;
+}
+
+export interface PublicFairMediaItem {
   id: string;
-  caption: string;
-  /** Fecha de la Expo en formato `YYYY-MM-DD` (se formatea en el cliente/servidor en UTC). */
-  eventDate: string;
+  mediaType: "IMAGE" | "VIDEO";
   relativePath: string;
-  width: number;
-  height: number;
+  width: number | null;
+  height: number | null;
+  sortOrder: number;
+}
+
+export interface PublicFairAlbum {
+  id: string;
+  fairType: FairTypeKey;
+  title: string;
+  /** Fecha de la feria en formato `YYYY-MM-DD` (UTC). */
+  eventDate: string;
+  location: string;
+  description: string | null;
+  media: PublicFairMediaItem[];
+}
+
+export async function getPublicFairConfigs(): Promise<
+  Record<FairTypeKey, PublicFairConfig>
+> {
+  const systemConfig = await getPublicSystemConfig();
+  return systemConfig.fairs;
 }
 
 /**
- * Últimas fotos publicadas de la Expo Emprendedores para la portada pública.
- * Se invalida con el tag `public-expos` cuando Prensa sube, oculta o borra una foto.
+ * Crónicas publicadas de una feria específica (feed tipo diario virtual).
+ * Se invalida con los tags `public-expos` / `public-fairs` al publicar, ocultar o borrar.
  */
-export async function getPublicExpoPhotos(limit = 8): Promise<PublicExpoPhoto[]> {
+export async function getPublicFairAlbumsByType(
+  fairType: FairTypeKey,
+  limit = 30,
+): Promise<PublicFairAlbum[]> {
   "use cache";
-  cacheTag("public-expos");
+  cacheTag("public-expos", "public-fairs");
   cacheLife("minutes");
 
-  const photos = await db.expoPhoto.findMany({
-    where: { isPublished: true },
+  const safeLimit = Math.min(Math.max(limit, 1), 60);
+
+  const albums = await db.fairAlbum.findMany({
+    where: { fairType, isPublished: true, media: { some: {} } },
     orderBy: [{ eventDate: "desc" }, { createdAt: "desc" }],
-    take: limit,
-    select: {
-      id: true,
-      caption: true,
-      eventDate: true,
-      relativePath: true,
-      width: true,
-      height: true,
+    take: safeLimit,
+    include: {
+      media: {
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          mediaType: true,
+          relativePath: true,
+          width: true,
+          height: true,
+          sortOrder: true,
+        },
+      },
     },
   });
 
-  return photos.map((photo) => ({
-    id: photo.id,
-    caption: photo.caption,
-    eventDate: photo.eventDate.toISOString().slice(0, 10),
-    relativePath: photo.relativePath,
-    width: photo.width,
-    height: photo.height,
+  return albums.map((album) => ({
+    id: album.id,
+    fairType: album.fairType,
+    title: album.title,
+    eventDate: album.eventDate.toISOString().slice(0, 10),
+    location: album.location,
+    description: album.description,
+    media: album.media,
   }));
 }

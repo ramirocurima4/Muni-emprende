@@ -8,7 +8,9 @@ import {
   ChefHat,
   Hammer,
   Laptop,
+  Layers,
   Loader2,
+  Package,
   Spool,
   Sprout,
   Store,
@@ -82,6 +84,9 @@ export function ProductWizardModal({
   const [description, setDescription] = useState(
     isEdit ? (initialProduct?.description ?? "") : "",
   );
+  const [isCombo, setIsCombo] = useState<boolean>(
+    isEdit ? Boolean(initialProduct?.isCombo) : false,
+  );
   const [ingredients, setIngredients] = useState(
     isEdit ? (initialProduct?.ingredients ?? "") : "",
   );
@@ -98,7 +103,7 @@ export function ProductWizardModal({
   }, [previewUrl]);
 
   const selectedCategory = categories.find((cat) => cat.id === categoryId);
-  const showIngredientsField = Boolean(selectedCategory?.isGastronomy);
+  const showIngredientsField = isCombo || Boolean(selectedCategory?.isGastronomy);
 
   async function handlePhotoSelected(
     event: React.ChangeEvent<HTMLInputElement>,
@@ -155,6 +160,17 @@ export function ProductWizardModal({
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
+    if (step === 1) {
+      handleNextFromStep1();
+      return;
+    }
+
+    if (step === 2) {
+      handleNextFromStep2();
+      return;
+    }
+
     setStepError(null);
 
     if (description.trim().length < 10) {
@@ -177,6 +193,7 @@ export function ProductWizardModal({
       body.set("title", title.trim());
       body.set("categoryId", categoryId);
       body.set("description", description.trim());
+      body.set("isCombo", isCombo ? "true" : "false");
       body.set("ingredients", showIngredientsField ? ingredients.trim() : "");
       if (selectedFile) {
         body.set("image", selectedFile);
@@ -192,10 +209,10 @@ export function ProductWizardModal({
         body,
       });
 
-      const data = await response.json();
-      if (!response.ok || !data.ok) {
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.ok) {
         throw new Error(
-          data.error ?? "No pudimos guardar el producto. Intentá de nuevo.",
+          data?.error ?? "No pudimos guardar el producto. Intentá de nuevo.",
         );
       }
 
@@ -344,11 +361,75 @@ export function ProductWizardModal({
             <div className="space-y-5">
               <div>
                 <h4 className="text-lg font-extrabold text-brand-ink">
-                  2. Título y Rubro
+                  2. Tipo, Título y Rubro
                 </h4>
                 <p className="mt-1 text-sm text-brand-muted">
                   Sin precios: los vecinos te consultan directo por WhatsApp.
                 </p>
+              </div>
+
+              {/* Selector Producto Individual vs Combo / Lista de variedades */}
+              <div>
+                <span className="block text-sm font-bold text-brand-ink">
+                  ¿Qué estás subiendo? *
+                </span>
+                <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCombo(false)}
+                    className={`flex items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green ${
+                      !isCombo
+                        ? "border-brand-green bg-brand-green-soft text-brand-green-dark shadow-xs"
+                        : "border-brand-sky/30 bg-[#FDFBF7] text-brand-ink hover:border-brand-sky"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        !isCombo
+                          ? "bg-brand-green text-white"
+                          : "bg-white text-brand-sky-dark"
+                      }`}
+                    >
+                      <Package className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <span className="block text-sm font-extrabold leading-snug">
+                        Producto individual
+                      </span>
+                      <span className="mt-0.5 block text-xs font-medium text-brand-muted">
+                        Un artículo o plato específico
+                      </span>
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsCombo(true)}
+                    className={`flex items-start gap-3 rounded-2xl border-2 p-3.5 text-left transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green ${
+                      isCombo
+                        ? "border-brand-green bg-brand-green-soft text-brand-green-dark shadow-xs"
+                        : "border-brand-sky/30 bg-[#FDFBF7] text-brand-ink hover:border-brand-sky"
+                    }`}
+                  >
+                    <span
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${
+                        isCombo
+                          ? "bg-brand-green text-white"
+                          : "bg-white text-brand-sky-dark"
+                      }`}
+                    >
+                      <Layers className="h-5 w-5" aria-hidden="true" />
+                    </span>
+                    <div>
+                      <span className="block text-sm font-extrabold leading-snug">
+                        Combo / Lista de variedades
+                      </span>
+                      <span className="mt-0.5 block text-xs font-medium text-brand-muted">
+                        Foto grupal o flyer con varios sabores u opciones
+                      </span>
+                    </div>
+                  </button>
+                </div>
               </div>
 
               <div>
@@ -356,14 +437,26 @@ export function ProductWizardModal({
                   htmlFor="wizard-product-title"
                   className="block text-sm font-bold text-brand-ink"
                 >
-                  Título del producto *
+                  {isCombo
+                    ? "Título del combo o publicación *"
+                    : "Título del producto *"}
                 </label>
                 <input
                   id="wizard-product-title"
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Ej: Docena de chipá casero"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleNextFromStep2();
+                    }
+                  }}
+                  placeholder={
+                    isCombo
+                      ? "Ej: Empanadas caseras por docena (varios sabores)"
+                      : "Ej: Docena de chipá casero"
+                  }
                   className="mt-1.5 min-h-[50px] w-full rounded-2xl border border-brand-sky/40 bg-[#FDFBF7] px-4 py-3 text-base text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-green focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-green/25"
                 />
               </div>
@@ -413,7 +506,11 @@ export function ProductWizardModal({
               <div>
                 <h4 className="text-lg font-extrabold text-brand-ink">
                   3. Descripción
-                  {showIngredientsField ? " e Ingredientes" : ""}
+                  {isCombo
+                    ? " y Variedades"
+                    : showIngredientsField
+                      ? " e Ingredientes"
+                      : ""}
                 </h4>
                 <p className="mt-1 text-sm text-brand-muted">
                   Contá lo necesario para que el vecino sepa qué ofrecés.
@@ -443,17 +540,25 @@ export function ProductWizardModal({
                     htmlFor="wizard-product-ingredients"
                     className="block text-sm font-bold text-brand-ink"
                   >
-                    Ingredientes (opcional · Gastronomía)
+                    {isCombo
+                      ? "Variedades o qué incluye"
+                      : "Ingredientes (opcional · Gastronomía)"}
                   </label>
                   <p className="mt-0.5 text-xs text-[#78350F]">
-                    Ideal para que quien compra sepa qué lleva tu comida.
+                    {isCombo
+                      ? "Separalas con comas para que los vecinos vean todas las opciones disponibles."
+                      : "Ideal para que quien compra sepa qué lleva tu comida."}
                   </p>
                   <textarea
                     id="wizard-product-ingredients"
                     rows={2}
                     value={ingredients}
                     onChange={(e) => setIngredients(e.target.value)}
-                    placeholder="Ej: Almidón de mandioca, queso criollo, huevo y manteca."
+                    placeholder={
+                      isCombo
+                        ? "Ej: Carne, Pollo, Jamón y queso"
+                        : "Ej: Almidón de mandioca, queso criollo, huevo y manteca."
+                    }
                     className="mt-2 w-full rounded-xl border border-[#F5A623]/40 bg-white px-3.5 py-2.5 text-sm text-brand-ink placeholder:text-brand-muted/70 focus:border-brand-green focus:outline-none focus:ring-2 focus:ring-brand-green/25"
                   />
                 </div>
@@ -496,6 +601,7 @@ export function ProductWizardModal({
 
             {step < 3 ? (
               <button
+                key="wizard-next-step"
                 type="button"
                 disabled={isCompressingPhoto}
                 onClick={step === 1 ? handleNextFromStep1 : handleNextFromStep2}
@@ -506,6 +612,7 @@ export function ProductWizardModal({
               </button>
             ) : (
               <button
+                key="wizard-submit"
                 type="submit"
                 disabled={isSubmitting}
                 className="flex min-h-[52px] flex-1 items-center justify-center gap-2 rounded-2xl bg-brand-green px-5 py-3 text-base font-extrabold text-white shadow-lg shadow-brand-green/20 transition-colors hover:bg-brand-green-hover disabled:opacity-65"

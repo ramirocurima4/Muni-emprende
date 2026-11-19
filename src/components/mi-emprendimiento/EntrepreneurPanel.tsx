@@ -1,7 +1,13 @@
 "use client";
 
 import type { ProductStatus } from "@prisma/client";
-import { CheckCircle2, Clock3, ExternalLink, PlusCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Clock3,
+  ExternalLink,
+  MessageCircle,
+  PlusCircle,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -99,13 +105,40 @@ export function EntrepreneurPanel({
   function handleProductStatusChanged(
     productId: string,
     nextStatus: ProductStatus,
+    bumped?: boolean,
   ) {
-    setProducts((prev) =>
-      prev.map((item) =>
-        item.id === productId ? { ...item, status: nextStatus } : item,
-      ),
-    );
+    setProducts((prev) => {
+      const updatedList = prev.map((item) =>
+        item.id === productId
+          ? {
+              ...item,
+              status: nextStatus,
+              updatedAtIso: bumped ? new Date().toISOString() : item.updatedAtIso,
+            }
+          : item,
+      );
+      if (!bumped) return updatedList;
+      const bumpedItem = updatedList.find((item) => item.id === productId);
+      if (!bumpedItem) return updatedList;
+      return [
+        bumpedItem,
+        ...updatedList.filter((item) => item.id !== productId),
+      ];
+    });
     router.refresh();
+  }
+
+  function buildShareStorefrontWhatsappUrl(): string {
+    const baseUrl =
+      typeof window !== "undefined" &&
+      window.location.origin &&
+      !window.location.origin.includes("localhost")
+        ? window.location.origin
+        : "https://muniemprende.sanroque.gob.ar";
+
+    const storefrontUrl = `${baseUrl}/?emprendedor=${encodeURIComponent(profile.slug)}`;
+    const text = `¡Hola! Te invito a recorrer la vidriera digital de *${profile.businessName}* en MuniEmprende San Roque. Mirá nuestros productos disponibles hoy y hacé tu pedido directo por WhatsApp: ${storefrontUrl}`;
+    return `https://wa.me/?text=${encodeURIComponent(text)}`;
   }
 
   function handleProductDeleted(productId: string) {
@@ -131,13 +164,25 @@ export function EntrepreneurPanel({
             </p>
           </div>
 
-          <Link
-            href="/catalogo"
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-2xl border border-brand-sky/40 bg-[#E8F1F8] px-4 py-2 text-sm font-bold text-brand-sky-dark transition-colors hover:bg-brand-sky-light"
-          >
-            <span>Ver catálogo</span>
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <a
+              href={buildShareStorefrontWhatsappUrl()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-2xl bg-brand-green px-4 py-2 text-xs font-extrabold text-white shadow-md shadow-brand-green/20 transition-all hover:bg-brand-green-hover sm:text-sm"
+            >
+              <MessageCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span>Compartir mi vidriera por WhatsApp</span>
+            </a>
+
+            <Link
+              href={`/?emprendedor=${encodeURIComponent(profile.slug)}`}
+              className="inline-flex min-h-[44px] items-center gap-1.5 rounded-2xl border border-brand-sky/40 bg-[#E8F1F8] px-4 py-2 text-xs font-bold text-brand-sky-dark transition-colors hover:bg-brand-sky-light sm:text-sm"
+            >
+              <span>Ver mi vidriera</span>
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
 
         {/* Resumen rápido sin tecnicismos */}
