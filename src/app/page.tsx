@@ -1,8 +1,7 @@
 import Link from "next/link";
 import { Suspense } from "react";
-import { Leaf, Search } from "lucide-react";
+import { Leaf } from "lucide-react";
 import HomeLoading from "@/app/loading";
-import { CategoryVisualFilters } from "@/components/catalog/CategoryVisualFilters";
 import { EntrepreneursShowcaseSection } from "@/components/home/EntrepreneursShowcaseSection";
 import { EntrepreneurStorefrontView } from "@/components/home/EntrepreneurStorefrontView";
 import { FairsInviteCard } from "@/components/home/FairsInviteCard";
@@ -10,7 +9,6 @@ import { HomeProductShowcase } from "@/components/home/HomeProductShowcase";
 import {
   getHomeShowcaseData,
   getPublicActiveEntrepreneurs,
-  getPublicCategories,
   getPublicEntrepreneurStorefront,
 } from "@/lib/catalog";
 
@@ -95,108 +93,52 @@ async function HomePageContent({ searchParams }: HomePageProps) {
         </div>
       </section>
 
-      {/* 2. Buscador rápido y Todas las Categorías (#catalogo) */}
-      <Suspense fallback={<HomeCategoriesSkeleton />}>
-        <HomeSearchAndCategoriesSection />
-      </Suspense>
-
-      {/* 3. Tira 'Lo último en Gastronomía' + Grilla Principal 'Catálogo Destacado' */}
-      <Suspense fallback={<HomeShowcaseSkeleton />}>
-        <HomeShowcaseSection />
-      </Suspense>
-
-      {/* 4. Vitrina 'Emprendedores Sanroqueños' + botón discreto de compartir por WhatsApp */}
+      {/* 2. Carrusel horizontal compacto 'Emprendedores en San Roque' */}
       <Suspense fallback={<HomeEntrepreneursSkeleton />}>
         <HomeEntrepreneursSection />
       </Suspense>
 
-      {/* 5. Accesos directos a las páginas de las ferias municipales */}
+      {/* 3. Tira 'Lo último en Gastronomía' + Grilla Principal 'Catálogo Destacado' (máx. 12 productos diversos) */}
+      <Suspense fallback={<HomeShowcaseSkeleton />}>
+        <HomeShowcaseSection />
+      </Suspense>
+
+      {/* 4. Accesos directos a las páginas de las ferias municipales */}
       <FairsInviteCard />
     </div>
   );
 }
 
-async function HomeSearchAndCategoriesSection() {
-  const categories = await getPublicCategories();
-
-  return (
-    <section
-      id="catalogo"
-      aria-label="Buscador y rubros disponibles"
-      className="scroll-mt-28 space-y-5 rounded-[30px] border border-[#A8C6E3] bg-[#D6E6F4] p-4 shadow-lg shadow-[#1F4478]/[0.05] sm:p-6"
-    >
-      <form
-        action="/catalogo"
-        method="GET"
-        role="search"
-        className="flex flex-col gap-3 sm:flex-row sm:items-center"
-      >
-        <div className="relative flex-1">
-          <label htmlFor="home-search-input" className="sr-only">
-            Buscar productos o emprendedores de San Roque
-          </label>
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-4 h-4 w-4 -translate-y-1/2 text-brand-muted"
-          />
-          <input
-            id="home-search-input"
-            type="search"
-            name="q"
-            placeholder="Buscá chipá, dulces, artesanías, plantines o un emprendimiento..."
-            className="w-full rounded-2xl border border-[#A8C6E3] bg-brand-surface py-3.5 pr-4 pl-11 text-sm text-brand-ink placeholder:text-brand-muted focus:border-brand-green focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-green/30"
-          />
-        </div>
-        <button
-          type="submit"
-          className="w-full shrink-0 rounded-2xl bg-brand-green px-6 py-3.5 text-sm font-bold text-white shadow-md shadow-brand-green/20 transition-colors hover:bg-brand-green-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 sm:w-auto"
-        >
-          Buscar en catálogo
-        </button>
-      </form>
-
-      {categories.length > 0 ? (
-        <div className="border-t border-[#A8C6E3]/80 pt-4">
-          <CategoryVisualFilters categories={categories} variant="home" />
-        </div>
-      ) : null}
-    </section>
-  );
-}
-
 async function HomeShowcaseSection() {
-  const { gastronomyProducts, catalogProducts } = await getHomeShowcaseData();
+  const { gastronomyProducts, catalogProducts, totalCatalogCount } =
+    await getHomeShowcaseData();
   return (
     <HomeProductShowcase
       gastronomyProducts={gastronomyProducts}
       catalogProducts={catalogProducts}
+      totalCatalogCount={totalCatalogCount}
     />
   );
 }
 
 async function HomeEntrepreneursSection() {
-  const entrepreneurs = await getPublicActiveEntrepreneurs(20);
+  const entrepreneurs = await getPublicActiveEntrepreneurs(36);
   return <EntrepreneursShowcaseSection entrepreneurs={entrepreneurs} />;
-}
-
-function HomeCategoriesSkeleton() {
-  return (
-    <div className="rounded-[30px] border border-[#A8C6E3] bg-[#D6E6F4] p-5">
-      <div className="h-12 w-full animate-pulse rounded-2xl bg-white/80" />
-    </div>
-  );
 }
 
 function HomeEntrepreneursSkeleton() {
   return (
-    <div className="rounded-[32px] border border-[#A8C6E3] bg-[#D6E6F4] p-5 sm:p-8">
-      <div className="h-7 w-60 animate-pulse rounded-xl bg-white/75" />
-      <div className="mt-5 grid grid-cols-2 gap-3.5 sm:grid-cols-4">
-        {[0, 1, 2, 3].map((idx) => (
+    <div className="rounded-[28px] border border-[#A8C6E3] bg-[#D6E6F4] p-4 sm:px-6 sm:py-5">
+      <div className="h-6 w-56 animate-pulse rounded-xl bg-white/75" />
+      <div className="no-scrollbar mt-3.5 flex gap-3 overflow-hidden py-1">
+        {[0, 1, 2, 3, 4, 5].map((idx) => (
           <div
             key={idx}
-            className="h-20 animate-pulse rounded-2xl bg-white/80"
-          />
+            className="flex w-[112px] shrink-0 flex-col items-center rounded-2xl border border-[#B8D2EA] bg-white/80 px-2.5 py-3 sm:w-[124px]"
+          >
+            <div className="h-14 w-14 animate-pulse rounded-full bg-[#DCE9F9] sm:h-16 sm:w-16" />
+            <div className="mt-2 h-3 w-16 animate-pulse rounded-md bg-brand-border" />
+          </div>
         ))}
       </div>
     </div>

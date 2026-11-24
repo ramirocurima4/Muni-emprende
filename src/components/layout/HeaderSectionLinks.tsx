@@ -14,11 +14,11 @@ interface NavSectionItem {
 
 const SECTION_ITEMS: NavSectionItem[] = [
   {
-    href: "/",
+    href: "/catalogo",
     label: "Catálogo",
     mobileLabel: "Catálogo",
     icon: LayoutGrid,
-    isActive: (p) => p === "/" || p.startsWith("/catalogo") || p.startsWith("/productos"),
+    isActive: (p) => p === "/catalogo" || p.startsWith("/catalogo/"),
   },
   {
     href: "/expo-emprendedores",

@@ -21,18 +21,21 @@ export default function HomeLoading() {
         </div>
       </section>
 
-      {/* Skeleton de Categorías Circulares */}
-      <div className="no-scrollbar flex items-start gap-4 overflow-hidden py-1 sm:grid sm:grid-cols-4 lg:grid-cols-8">
-        {[0, 1, 2, 3, 4, 5, 6, 7].map((idx) => (
-          <div
-            key={idx}
-            className="flex min-w-[74px] shrink-0 flex-col items-center gap-2"
-          >
-            <div className="h-15 w-15 animate-pulse rounded-full bg-brand-sky-tint sm:h-16 sm:w-16" />
-            <div className="h-3 w-14 animate-pulse rounded-full bg-brand-border" />
-          </div>
-        ))}
-      </div>
+      {/* Skeleton del Carrusel 'Emprendedores en San Roque' */}
+      <section className="rounded-[28px] border border-[#A8C6E3] bg-[#D6E6F4] p-4 sm:px-6 sm:py-5">
+        <div className="h-6 w-56 animate-pulse rounded-xl bg-white/75" />
+        <div className="no-scrollbar mt-3.5 flex gap-3 overflow-hidden py-1">
+          {[0, 1, 2, 3, 4, 5].map((idx) => (
+            <div
+              key={idx}
+              className="flex w-[112px] shrink-0 flex-col items-center rounded-2xl border border-[#B8D2EA] bg-white/80 px-2.5 py-3 sm:w-[124px]"
+            >
+              <div className="h-14 w-14 animate-pulse rounded-full bg-[#DCE9F9] sm:h-16 sm:w-16" />
+              <div className="mt-2 h-3 w-16 animate-pulse rounded-md bg-brand-border" />
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* Skeleton de Gastronomía Sanroqueña */}
       <section className="rounded-[30px] bg-brand-sky-tint/80 p-5 sm:p-8">

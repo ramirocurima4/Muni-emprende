@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Search } from "lucide-react";
+import { Search, Store } from "lucide-react";
 import { CatalogContentSkeleton } from "@/components/catalog/CatalogSkeleton";
 import { CategoryVisualFilters } from "@/components/catalog/CategoryVisualFilters";
 import { MasonryCatalogGrid } from "@/components/catalog/MasonryCatalogGrid";
@@ -9,6 +9,7 @@ import {
   getPublicCatalogProducts,
   getPublicCategories,
 } from "@/lib/catalog";
+import { getUploadImageUrl } from "@/lib/images";
 
 export const metadata: Metadata = {
   title: "Catálogo Completo de Productos",
@@ -65,14 +66,28 @@ async function CatalogContent({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const resolvedParams = await searchParams;
-  const [categories, { products, activeQuery, activeCategorySlug }] =
-    await Promise.all([
-      getPublicCategories(),
-      getPublicCatalogProducts(resolvedParams),
-    ]);
+  const [
+    categories,
+    {
+      products,
+      activeQuery,
+      activeCategorySlug,
+      activeEntrepreneurParam,
+      activeEntrepreneur,
+    },
+  ] = await Promise.all([
+    getPublicCategories(),
+    getPublicCatalogProducts(resolvedParams),
+  ]);
 
   const activeCategory = categories.find(
     (c) => c.slug === activeCategorySlug,
+  );
+  const entrepreneurAvatarUrl = activeEntrepreneur?.avatarPath
+    ? getUploadImageUrl(activeEntrepreneur.avatarPath, "thumb")
+    : null;
+  const hasActiveFilters = Boolean(
+    activeQuery || activeCategory || activeEntrepreneurParam,
   );
 
   return (
@@ -87,6 +102,13 @@ async function CatalogContent({
         >
           {activeCategorySlug ? (
             <input type="hidden" name="categoria" value={activeCategorySlug} />
+          ) : null}
+          {activeEntrepreneurParam ? (
+            <input
+              type="hidden"
+              name="emprendedor"
+              value={activeEntrepreneurParam}
+            />
           ) : null}
 
           <div className="relative flex-1">
@@ -121,30 +143,62 @@ async function CatalogContent({
             categories={categories}
             activeCategorySlug={activeCategorySlug}
             activeQuery={activeQuery}
+            activeEntrepreneurParam={activeEntrepreneurParam}
             variant="catalog"
           />
         </div>
       </div>
 
       {/* Resumen de filtros activos */}
-      {activeQuery || activeCategory ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-brand-sky-light/70 px-4 py-3 text-xs text-brand-sky-dark shadow-sm shadow-black/5">
-          <span>
-            Mostrando <strong>{products.length}</strong>{" "}
-            {products.length === 1 ? "producto" : "productos"}
-            {activeCategory ? (
-              <>
-                {" "}
-                en <strong>{activeCategory.name}</strong>
-              </>
+      {hasActiveFilters ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#B8D2EA] bg-brand-sky-light/70 px-4 py-3 text-xs text-brand-sky-dark shadow-sm shadow-black/5">
+          <div className="flex flex-wrap items-center gap-2.5">
+            {activeEntrepreneur ? (
+              <span className="inline-flex items-center gap-2 rounded-full border border-[#A8C6E3] bg-brand-surface py-1 pr-3 pl-1 text-xs font-extrabold text-brand-ink shadow-2xs">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#DCE9F9]">
+                  {entrepreneurAvatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={entrepreneurAvatarUrl}
+                      alt={activeEntrepreneur.businessName}
+                      width={48}
+                      height={48}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Store
+                      className="h-3.5 w-3.5 text-brand-green"
+                      aria-hidden="true"
+                    />
+                  )}
+                </span>
+                <span>{activeEntrepreneur.businessName}</span>
+              </span>
             ) : null}
-            {activeQuery ? (
-              <>
-                {" "}
-                para <strong>&ldquo;{activeQuery}&rdquo;</strong>
-              </>
-            ) : null}
-          </span>
+
+            <span>
+              Mostrando <strong>{products.length}</strong>{" "}
+              {products.length === 1 ? "producto" : "productos"}
+              {activeEntrepreneur ? (
+                <>
+                  {" "}
+                  de <strong>{activeEntrepreneur.businessName}</strong>
+                </>
+              ) : null}
+              {activeCategory ? (
+                <>
+                  {" "}
+                  en <strong>{activeCategory.name}</strong>
+                </>
+              ) : null}
+              {activeQuery ? (
+                <>
+                  {" "}
+                  para <strong>&ldquo;{activeQuery}&rdquo;</strong>
+                </>
+              ) : null}
+            </span>
+          </div>
 
           <Link
             href="/catalogo"

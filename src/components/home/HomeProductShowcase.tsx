@@ -24,11 +24,13 @@ import { buildProductWhatsappUrl } from "@/lib/whatsapp";
 interface HomeProductShowcaseProps {
   gastronomyProducts: FeaturedHomeProductItem[];
   catalogProducts: FeaturedHomeProductItem[];
+  totalCatalogCount: number;
 }
 
 export function HomeProductShowcase({
   gastronomyProducts,
   catalogProducts,
+  totalCatalogCount,
 }: HomeProductShowcaseProps) {
   const [selectedProduct, setSelectedProduct] =
     useState<FeaturedHomeProductItem | null>(null);
@@ -174,6 +176,27 @@ export function HomeProductShowcase({
                 badgeLabel={product.category.name}
               />
             ))}
+          </div>
+
+          <div className="flex flex-col items-center gap-2 pt-3 text-center">
+            <Link
+              href="/catalogo"
+              className="inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-brand-green px-7 py-3.5 text-sm font-extrabold text-white shadow-lg shadow-brand-green/25 transition-all duration-200 hover:-translate-y-0.5 hover:bg-brand-green-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 sm:w-auto sm:text-base"
+            >
+              <span>Explorar todo el catálogo</span>
+              {totalCatalogCount > 12 ? (
+                <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-extrabold text-white">
+                  {totalCatalogCount} productos
+                </span>
+              ) : null}
+              <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </Link>
+            {totalCatalogCount > 12 ? (
+              <p className="text-xs font-medium text-brand-muted">
+                Mostrando una selección representativa de {catalogProducts.length}{" "}
+                de los {totalCatalogCount} productos disponibles en San Roque.
+              </p>
+            ) : null}
           </div>
         </section>
       ) : null}

@@ -16,6 +16,7 @@ interface CategoryVisualFiltersProps {
   categories: PublicCategoryItem[];
   activeCategorySlug?: string;
   activeQuery?: string;
+  activeEntrepreneurParam?: string;
   variant?: "home" | "catalog";
 }
 
@@ -53,13 +54,20 @@ function resolveCategoryVisual(slug: string): CategoryVisualMeta {
   return { icon: matchedRule ? matchedRule[1] : Store };
 }
 
-function buildCategoryHref(slug?: string, activeQuery?: string): string {
+function buildCategoryHref(
+  slug?: string,
+  activeQuery?: string,
+  activeEntrepreneurParam?: string,
+): string {
   const params = new URLSearchParams();
   if (slug) {
     params.set("categoria", slug);
   }
   if (activeQuery) {
     params.set("q", activeQuery);
+  }
+  if (activeEntrepreneurParam) {
+    params.set("emprendedor", activeEntrepreneurParam);
   }
   const qs = params.toString();
   return qs ? `/catalogo?${qs}` : "/catalogo";
@@ -73,6 +81,7 @@ export function CategoryVisualFilters({
   categories,
   activeCategorySlug,
   activeQuery,
+  activeEntrepreneurParam,
   variant = "catalog",
 }: CategoryVisualFiltersProps) {
   if (variant === "home") {
@@ -122,7 +131,7 @@ export function CategoryVisualFilters({
       className="no-scrollbar flex items-center gap-2.5 overflow-x-auto py-1.5 sm:flex-wrap sm:gap-3"
     >
       <Link
-        href={buildCategoryHref(undefined, activeQuery)}
+        href={buildCategoryHref(undefined, activeQuery, activeEntrepreneurParam)}
         className={`group inline-flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 ${
           !activeCategorySlug
             ? "bg-brand-green text-white shadow-md shadow-brand-green/20"
@@ -148,7 +157,7 @@ export function CategoryVisualFilters({
         return (
           <Link
             key={cat.id}
-            href={buildCategoryHref(cat.slug, activeQuery)}
+            href={buildCategoryHref(cat.slug, activeQuery, activeEntrepreneurParam)}
             className={`group inline-flex shrink-0 items-center gap-2.5 rounded-full py-1.5 pr-4 pl-1.5 text-xs font-bold transition-all focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-green focus-visible:ring-offset-2 ${
               isSelected
                 ? "bg-brand-green text-white shadow-md shadow-brand-green/20"
